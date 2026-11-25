@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795577957779,
+  "lastUpdate": 1795579226903,
   "repoUrl": "https://github.com/eaudetcobello/spliit",
   "entries": {
     "Spliit performance (deterministic)": [
@@ -527,6 +527,90 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/eaudetcobello/spliit/commit/a4c069b5166da2675280816ba958b9ce5d98b53f"
         },
         "date": 1795577957150,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "list-groups:home bytes",
+            "value": 7064,
+            "unit": "bytes"
+          },
+          {
+            "name": "list-groups:home queries",
+            "value": 61,
+            "unit": "queries"
+          },
+          {
+            "name": "view-group:first-page bytes",
+            "value": 25258,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-group:first-page queries",
+            "value": 3,
+            "unit": "queries"
+          },
+          {
+            "name": "view-group:deep-page bytes",
+            "value": 24564,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-group:deep-page queries",
+            "value": 2,
+            "unit": "queries"
+          },
+          {
+            "name": "view-group:search bytes",
+            "value": 23714,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-group:search queries",
+            "value": 3,
+            "unit": "queries"
+          },
+          {
+            "name": "view-group:balances bytes",
+            "value": 2370,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-group:balances queries",
+            "value": 2,
+            "unit": "queries"
+          },
+          {
+            "name": "view-expense:edit-form bytes",
+            "value": 5657,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-expense:edit-form queries",
+            "value": 3,
+            "unit": "queries"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155978570+eaudetcobello@users.noreply.github.com",
+            "name": "eaudetcobello",
+            "username": "eaudetcobello"
+          },
+          "committer": {
+            "email": "155978570+eaudetcobello@users.noreply.github.com",
+            "name": "eaudetcobello",
+            "username": "eaudetcobello"
+          },
+          "distinct": true,
+          "id": "c7e72215cb799f4a00f672f75f4560d88e75d188",
+          "message": "Fix the expense card's paid-for order and three failing e2e tests\n\n- List an expense's paid-for participants in the group's participant\n  order. Postgres returned them in insertion order; SQLite returns them\n  by primary key, i.e. by random participant id, so names shuffled from\n  card to card (and \"edits an expense\" failed whenever ids sorted\n  against the form order).\n- Don't let the create form's pending active user overwrite one picked\n  since: it only reaches the group on the expense list's first render,\n  which a user (or the settle-up test) can skip by going straight to\n  \"Add expense\".\n- e2e: expect \"Everyone is settled up.\" after deleting the only expense,\n  the text that replaced \"doesn't need any reimbursement\", and escape the\n  `?` in the share URL regex (`\\?` in a template literal is just `?`).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-24T22:56:48-05:00",
+          "tree_id": "3c699a2833f0c37d6483f6f9a354c8df9f03e230",
+          "url": "https://github.com/eaudetcobello/spliit/commit/c7e72215cb799f4a00f672f75f4560d88e75d188"
+        },
+        "date": 1795579226554,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
