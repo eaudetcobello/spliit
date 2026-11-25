@@ -18,7 +18,7 @@ test.use({ exchangeRate: 1.25 })
 
 const PARTICIPANTS = ['Alice', 'Bob']
 
-/** Creates a group where Bob owes Alice 50, and opens "Mark as paid". */
+/** Creates a group where Bob owes Alice 50, and opens "Settle up". */
 async function openRepaymentForm(page: Page, name: string): Promise<string> {
   const groupId = await createGroup(page, {
     name: `${name} ${uniqueSuffix()}`,
@@ -32,7 +32,7 @@ async function openRepaymentForm(page: Page, name: string): Promise<string> {
 
   await openTab(page, 'Expenses')
   await reimbursementRow(page, 'Bob', 'Alice')
-    .getByRole('link', { name: 'Mark as paid' })
+    .getByRole('link', { name: 'Settle up' })
     .click()
   await page.waitForURL(/\/expenses\/create\?.*reimbursement=yes/, {
     timeout: 30_000,
@@ -81,7 +81,9 @@ test('settles the balance exactly and keeps the transferred amount', async ({
   )
   await expect(originalAmount(page)).toHaveValue('40.00')
 
-  await page.getByRole('button', { name: 'Create', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Record a payment', exact: true })
+    .click()
   await page.waitForURL(EXPENSES_URL, { timeout: 30_000 })
 
   // The card carries both figures: what settles the balance and what moved.

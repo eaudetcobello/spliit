@@ -189,6 +189,13 @@
       "simple": "Simple",
       "advanced": "Advanced"
     },
+    "repayment": {
+      "title": "Record a payment",
+      "youPaid": "You paid <strong>{to}</strong>",
+      "paidYou": "<strong>{from}</strong> paid you",
+      "paid": "<strong>{from}</strong> paid <strong>{to}</strong>",
+      "submit": "Record a payment"
+    },
     "simpleSplit": {
       "label": "How was this expense split?",
       "youPaidEqually": "You paid, split equally.",
@@ -363,14 +370,13 @@
   },
   "Balances": {
     "title": "Balances",
-    "description": "This is the amount that each participant paid or was paid for.",
-    "Reimbursements": {
-      "title": "Suggested reimbursements",
-      "description": "Here are suggestions for optimized reimbursements between participants.",
-      "noImbursements": "It looks like your group doesn’t need any reimbursement 😁",
-      "owes": "<strong>{from}</strong> owes <strong>{to}</strong>",
-      "markAsPaid": "Mark as paid"
-    }
+    "owesYou": "<strong>{from}</strong> owes you <money>{amount}</money>",
+    "youOwe": "You owe <strong>{to}</strong> <money>{amount}</money>",
+    "owes": "<strong>{from}</strong> owes <strong>{to}</strong> <money>{amount}</money>",
+    "settleUp": "Settle up",
+    "allSettled": "Everyone is settled up.",
+    "youAreSettled": "You are all settled up.",
+    "everyone": "Everyone’s balance"
   },
   "Stats": {
     "title": "Stats",

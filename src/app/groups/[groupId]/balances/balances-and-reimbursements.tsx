@@ -1,30 +1,32 @@
 'use client'
 
-import { BalancesList } from '@/app/groups/[groupId]/balances-list'
-import { ReimbursementList } from '@/app/groups/[groupId]/reimbursement-list'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getCurrencyFromGroup } from '@/lib/utils'
+import { Participant } from '@/generated/prisma/browser'
+import { Balances, Reimbursement } from '@/lib/balances'
+import { Currency } from '@/lib/currency'
+import { useActiveUser } from '@/lib/hooks'
+import { cn, formatCurrency, getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
-import { useTranslations } from 'next-intl'
-import { Fragment, useEffect } from 'react'
-import { match } from 'ts-pattern'
+import { ChevronDown } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
+import Link from 'next/link'
+import { ReactNode, useEffect } from 'react'
 import { useCurrentGroup } from '../current-group-context'
 
+/**
+ * Who owes whom, phrased from the active user's side ("Alice owes you
+ * $10.00", "You owe Bob $5.00"), each with a "Settle up" link that pre-fills
+ * the payment. Everyone's net balance is one click away.
+ */
 export default function BalancesAndReimbursements() {
   const utils = trpc.useUtils()
   const { groupId, group } = useCurrentGroup()
   const { data: balancesData, isLoading: balancesAreLoading } =
-    trpc.groups.balances.list.useQuery({
-      groupId,
-    })
+    trpc.groups.balances.list.useQuery({ groupId })
   const t = useTranslations('Balances')
+  const activeUser = useActiveUser(groupId)
 
   useEffect(() => {
     // Until we use tRPC more widely and can invalidate the cache on expense
@@ -39,103 +41,196 @@ export default function BalancesAndReimbursements() {
       className="mb-4 rounded-none -mx-4 border-x-0 sm:border-x sm:rounded-lg sm:mx-0"
       data-testid="balances-card"
     >
-      <CardHeader>
+      <CardHeader className="pb-2">
         <CardTitle>{t('title')}</CardTitle>
-        <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <BalancesLoading participantCount={group?.participants.length} />
+          <BalancesLoading />
         ) : (
-          <BalancesList
-            balances={balancesData.balances}
-            participants={group?.participants}
-            currency={getCurrencyFromGroup(group)}
-          />
-        )}
-      </CardContent>
-      <CardHeader className="border-t mx-6 px-0 pt-6">
-        <h3 className="font-semibold leading-none tracking-tight">
-          {t('Reimbursements.title')}
-        </h3>
-        <CardDescription>{t('Reimbursements.description')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <ReimbursementsLoading
-            participantCount={group?.participants.length}
-          />
-        ) : (
-          <ReimbursementList
-            reimbursements={balancesData.reimbursements}
-            participants={group?.participants}
-            currency={getCurrencyFromGroup(group)}
-            groupId={groupId}
-          />
+          <>
+            <Debts
+              reimbursements={balancesData.reimbursements}
+              participants={group.participants}
+              currency={getCurrencyFromGroup(group)}
+              groupId={groupId}
+              activeUser={activeUser}
+            />
+            <EveryonesBalance
+              balances={balancesData.balances}
+              participants={group.participants}
+              currency={getCurrencyFromGroup(group)}
+            />
+          </>
         )}
       </CardContent>
     </Card>
   )
 }
 
-const ReimbursementsLoading = ({
-  participantCount = 3,
+function Debts({
+  reimbursements,
+  participants,
+  currency,
+  groupId,
+  activeUser,
 }: {
-  participantCount?: number
-}) => {
+  reimbursements: Reimbursement[]
+  participants: Participant[]
+  currency: Currency
+  groupId: string
+  activeUser: string | null
+}) {
+  const t = useTranslations('Balances')
+  const locale = useLocale()
+  const name = (id: string) => participants.find((p) => p.id === id)?.name ?? ''
+  const isMe = (id: string) => !!activeUser && id === activeUser
+
+  if (reimbursements.length === 0) {
+    return <p className="py-2">{t('allSettled')}</p>
+  }
+
+  // The active user's own debts first.
+  const sorted = [...reimbursements].sort(
+    (a, b) =>
+      Number(isMe(b.from) || isMe(b.to)) - Number(isMe(a.from) || isMe(a.to)),
+  )
+  const involvesMe = sorted.some((r) => isMe(r.from) || isMe(r.to))
+
   return (
-    <div className="flex flex-col">
-      {Array(participantCount - 1)
-        .fill(undefined)
-        .map((_, index) => (
-          <div key={index} className="flex justify-between py-5">
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <Skeleton className="h-3 w-32" />
-              <Skeleton className="h-3 w-24" />
-            </div>
-            <Skeleton className="h-3 w-16" />
-          </div>
-        ))}
-    </div>
+    <ul className="divide-y">
+      {activeUser && activeUser !== 'None' && !involvesMe && (
+        <li className="py-3">{t('youAreSettled')}</li>
+      )}
+      {sorted.map((reimbursement) => {
+        const { from, to, amount } = reimbursement
+        const formatted = formatCurrency(currency, amount, locale)
+        const amountTag = (tone: 'positive' | 'negative' | 'neutral') =>
+          function Amount(chunks: ReactNode) {
+            return (
+              <strong
+                className={cn(
+                  'font-semibold whitespace-nowrap',
+                  tone === 'positive' && 'text-green-600 dark:text-green-500',
+                  tone === 'negative' && 'text-red-600 dark:text-red-500',
+                )}
+              >
+                {chunks}
+              </strong>
+            )
+          }
+        const strong = (chunks: ReactNode) => (
+          <strong className="font-semibold">{chunks}</strong>
+        )
+        const sentence = isMe(to)
+          ? t.rich('owesYou', {
+              from: name(from),
+              amount: formatted,
+              strong,
+              money: amountTag('positive'),
+            })
+          : isMe(from)
+            ? t.rich('youOwe', {
+                to: name(to),
+                amount: formatted,
+                strong,
+                money: amountTag('negative'),
+              })
+            : t.rich('owes', {
+                from: name(from),
+                to: name(to),
+                amount: formatted,
+                strong,
+                money: amountTag('neutral'),
+              })
+        const mine = isMe(from) || isMe(to)
+
+        return (
+          <li
+            key={`${from}-${to}`}
+            data-testid="reimbursement-row"
+            data-from={name(from)}
+            data-to={name(to)}
+            className={cn(
+              'flex items-center justify-between gap-3 py-3',
+              activeUser && !mine && 'text-muted-foreground text-sm',
+            )}
+          >
+            <span>{sentence}</span>
+            <Button
+              asChild
+              size="sm"
+              variant={mine ? 'default' : 'outline'}
+              className="flex-shrink-0"
+            >
+              <Link
+                href={`/groups/${groupId}/expenses/create?reimbursement=yes&from=${from}&to=${to}&amount=${amount}`}
+              >
+                {t('settleUp')}
+              </Link>
+            </Button>
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
-const BalancesLoading = ({
-  participantCount = 3,
+function EveryonesBalance({
+  balances,
+  participants,
+  currency,
 }: {
-  participantCount?: number
-}) => {
-  const barWidth = (index: number) =>
-    match(index % 3)
-      .with(0, () => 'w-1/3')
-      .with(1, () => 'w-2/3')
-      .otherwise(() => 'w-full')
+  balances: Balances
+  participants: Participant[]
+  currency: Currency
+}) {
+  const t = useTranslations('Balances')
+  const locale = useLocale()
 
+  // A native <details> rather than a Collapsible: it keeps the rows in the
+  // page while closed, so they stay searchable and readable by tests.
   return (
-    <div className="grid grid-cols-2 py-1 gap-y-2">
-      {Array(participantCount)
-        .fill(undefined)
-        .map((_, index) =>
-          index % 2 === 0 ? (
-            <Fragment key={index}>
-              <div className="flex items-center justify-end pr-2">
-                <Skeleton className="h-3 w-16" />
-              </div>
-              <div className="self-start">
-                <Skeleton className={`h-7 ${barWidth(index)} rounded-l-none`} />
-              </div>
-            </Fragment>
-          ) : (
-            <Fragment key={index}>
-              <div className="flex items-center justify-end">
-                <Skeleton className={`h-7 ${barWidth(index)} rounded-r-none`} />
-              </div>
-              <div className="flex items-center pl-2">
-                <Skeleton className="h-3 w-16" />
-              </div>
-            </Fragment>
-          ),
-        )}
-    </div>
+    <details className="group mt-2 border-t pt-3 text-sm">
+      <summary className="flex cursor-pointer list-none items-center gap-1 text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+        {t('everyone')}
+      </summary>
+      <ul className="mt-2">
+        {participants.map((participant) => {
+          const balance = balances[participant.id]?.total ?? 0
+          return (
+            <li
+              key={participant.id}
+              data-testid="balance-row"
+              data-participant={participant.name}
+              className="flex justify-between py-1"
+            >
+              <span>{participant.name}</span>
+              <span
+                className={cn(
+                  balance > 0 && 'text-green-600 dark:text-green-500',
+                  balance < 0 && 'text-red-600 dark:text-red-500',
+                  balance === 0 && 'text-muted-foreground',
+                )}
+              >
+                {formatCurrency(currency, balance, locale)}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </details>
   )
 }
+
+const BalancesLoading = () => (
+  <div className="flex flex-col divide-y">
+    {[0, 1].map((index) => (
+      <div key={index} className="flex items-center justify-between py-4">
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-8 w-20" />
+      </div>
+    ))}
+  </div>
+)

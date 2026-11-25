@@ -7,11 +7,12 @@ import {
   paidForRow,
   reimbursementRow,
   uniqueSuffix,
+  useAdvancedMode,
 } from './app'
 import { expect, test } from './fixtures'
 import { money } from './ui'
 
-test('settles a debt through "Mark as paid"', async ({ page }) => {
+test('settles a debt through "Settle up"', async ({ page }) => {
   // Two participants, so the suggested reimbursement is unique and deterministic.
   const groupId = await createGroup(page, {
     name: `E2E Reimbursement ${uniqueSuffix()}`,
@@ -32,14 +33,24 @@ test('settles a debt through "Mark as paid"', async ({ page }) => {
   await expect(row).toContainText('Bob owes Alice')
   await expect(row).toContainText(money(50))
 
-  await row.getByRole('link', { name: 'Mark as paid' }).click()
+  await row.getByRole('link', { name: 'Settle up' }).click()
   await page.waitForURL(/\/expenses\/create\?.*reimbursement=yes/, {
     timeout: 30_000,
   })
 
-  // The link prefills the whole form from its query string.
-  await expect(page.locator('input[name="title"]')).toHaveValue('Reimbursement')
+  // Simple mode shows only who paid whom and how much.
+  await expect(
+    page.getByRole('heading', { name: 'Record a payment' }),
+  ).toBeVisible()
+  await expect(page.getByTestId('repayment-summary')).toHaveText(
+    'Bob paid Alice',
+  )
+  await expect(page.locator('input[name="title"]')).toHaveCount(0)
   await expect(page.locator('input[name="amount"]')).toHaveValue(/^50/)
+
+  // The link prefills the whole form from its query string.
+  await useAdvancedMode(page)
+  await expect(page.locator('input[name="title"]')).toHaveValue('Reimbursement')
   await expect(page.getByTestId('paid-by')).toContainText('Bob')
   await expect(paidForRow(page, 'Alice').getByRole('checkbox')).toHaveAttribute(
     'aria-checked',
@@ -50,7 +61,9 @@ test('settles a debt through "Mark as paid"', async ({ page }) => {
     'false',
   )
 
-  await page.getByRole('button', { name: 'Create', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Record a payment', exact: true })
+    .click()
   await page.waitForURL(EXPENSES_URL, { timeout: 30_000 })
 
   await expect(
@@ -60,5 +73,5 @@ test('settles a debt through "Mark as paid"', async ({ page }) => {
   await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 0)
   await expectBalance(page, 'Bob', 0)
-  await expect(page.getByText(/doesn.t need any reimbursement/)).toBeVisible()
+  await expect(page.getByText('Everyone is settled up.')).toBeVisible()
 })

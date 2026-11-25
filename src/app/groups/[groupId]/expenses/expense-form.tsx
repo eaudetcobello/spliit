@@ -70,7 +70,7 @@ import { ChevronRight, Save } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { match } from 'ts-pattern'
 import { DeletePopup } from '../../../../components/delete-popup'
@@ -199,12 +199,14 @@ export function ExpenseForm({
 
   /** Whether the form was opened from a suggested reimbursement ("Mark as paid"). */
   const isRepayment = isCreate && !!searchParams.get('reimbursement')
-  // Simple mode replaces the payer and split fields with a single choice, so
-  // forms that arrive with those already filled in (a repayment) or with a
-  // receipt to look at start in Advanced.
+  // Simple mode replaces the payer and split fields with a single choice (or,
+  // for a repayment, with "Alice paid you"), so a form with a receipt to look
+  // at starts in Advanced.
   const [isAdvanced, setIsAdvanced] = useState(
-    !isCreate || isRepayment || !!searchParams.get('imageUrl'),
+    !isCreate || !!searchParams.get('imageUrl'),
   )
+  /** "Settle up": who paid whom and how much, nothing else. */
+  const isSimpleRepayment = isRepayment && !isAdvanced
 
   const getSelectedPayer = (field?: { value: string }) => {
     if (isCreate && typeof window !== 'undefined') {
@@ -372,7 +374,8 @@ export function ExpenseForm({
     splitChoice === undefined ? (splitChoices[0]?.value ?? null) : splitChoice
 
   useEffect(() => {
-    if (isAdvanced || !effectiveSplitChoice) return
+    // A repayment keeps the payer and recipient it was opened with.
+    if (isAdvanced || isRepayment || !effectiveSplitChoice) return
     const { kind, payer } = decodeSplitChoice(effectiveSplitChoice)
     const options = {
       shouldDirty: true,
@@ -387,10 +390,10 @@ export function ExpenseForm({
         .map(({ id }) => ({ participant: id, shares: '1' })),
       options,
     )
-  }, [isAdvanced, effectiveSplitChoice, group.participants, form])
+  }, [isAdvanced, isRepayment, effectiveSplitChoice, group.participants, form])
 
   const switchToSimple = () => {
-    if (isAdvanced) {
+    if (isAdvanced && !isRepayment) {
       setSplitChoice(
         deriveSplitChoice(
           form.getValues(),
@@ -400,6 +403,32 @@ export function ExpenseForm({
     }
     setIsAdvanced(false)
   }
+
+  // "Alice paid you", from the payer and recipient the form currently holds,
+  // so a change made in Advanced shows up here too.
+  const repaymentPayer = form.watch('paidBy')
+  const repaymentRecipient = form.watch('paidFor')?.[0]?.participant
+  const participantName = (id?: string) =>
+    group.participants.find((p) => p.id === id)?.name ?? ''
+  const strong = (chunks: ReactNode) => (
+    <strong className="font-semibold">{chunks}</strong>
+  )
+  const repaymentSentence =
+    repaymentPayer === activeUserId
+      ? t.rich('repayment.youPaid', {
+          to: participantName(repaymentRecipient),
+          strong,
+        })
+      : repaymentRecipient === activeUserId
+        ? t.rich('repayment.paidYou', {
+            from: participantName(repaymentPayer),
+            strong,
+          })
+        : t.rich('repayment.paid', {
+            from: participantName(repaymentPayer),
+            to: participantName(repaymentRecipient),
+            strong,
+          })
 
   const sendEvent = useAnalytics()
 
@@ -719,7 +748,9 @@ export function ExpenseForm({
         <Card>
           <CardHeader>
             <CardTitle>
-              {t(`${sExpense}.${isCreate ? 'create' : 'edit'}`)}
+              {isRepayment
+                ? t('repayment.title')
+                : t(`${sExpense}.${isCreate ? 'create' : 'edit'}`)}
             </CardTitle>
             {isCreate && (
               <div
@@ -749,43 +780,52 @@ export function ExpenseForm({
             )}
           </CardHeader>
           <CardContent className="grid sm:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem className="">
-                  <FormLabel>{t(`${sExpense}.TitleField.label`)}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t(`${sExpense}.TitleField.placeholder`)}
-                      className="text-base"
-                      {...field}
-                      onBlur={async () => {
-                        field.onBlur() // avoid skipping other blur event listeners since we overwrite `field`
-                        // Skip empty titles: tabbing through the field would
-                        // otherwise spend an API call to categorise "".
-                        if (
-                          isAdvanced &&
-                          runtimeFeatureFlags.enableCategoryExtract &&
-                          field.value.trim()
-                        ) {
-                          setCategoryLoading(true)
-                          const { categoryId } = await extractCategoryFromTitle(
-                            field.value,
-                          )
-                          form.setValue('category', categoryId)
-                          setCategoryLoading(false)
-                        }
-                      }}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t(`${sExpense}.TitleField.description`)}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {isSimpleRepayment && (
+              <p
+                className="sm:col-span-2 text-lg"
+                data-testid="repayment-summary"
+              >
+                {repaymentSentence}
+              </p>
+            )}
+            {!isSimpleRepayment && (
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem className="">
+                    <FormLabel>{t(`${sExpense}.TitleField.label`)}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t(`${sExpense}.TitleField.placeholder`)}
+                        className="text-base"
+                        {...field}
+                        onBlur={async () => {
+                          field.onBlur() // avoid skipping other blur event listeners since we overwrite `field`
+                          // Skip empty titles: tabbing through the field would
+                          // otherwise spend an API call to categorise "".
+                          if (
+                            isAdvanced &&
+                            runtimeFeatureFlags.enableCategoryExtract &&
+                            field.value.trim()
+                          ) {
+                            setCategoryLoading(true)
+                            const { categoryId } =
+                              await extractCategoryFromTitle(field.value)
+                            form.setValue('category', categoryId)
+                            setCategoryLoading(false)
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t(`${sExpense}.TitleField.description`)}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {isAdvanced && (
               <FormField
@@ -1083,7 +1123,7 @@ export function ExpenseForm({
               )}
             />
 
-            {!isAdvanced && (
+            {!isAdvanced && !isRepayment && (
               <div className="space-y-3 sm:order-3 sm:col-span-2">
                 <Label id="simple-split-label">{t('simpleSplit.label')}</Label>
                 <RadioGroup
@@ -1676,7 +1716,9 @@ export function ExpenseForm({
             loadingContent={t(isCreate ? 'creating' : 'saving')}
           >
             <Save className="w-4 h-4 mr-2" />
-            {t(isCreate ? 'create' : 'save')}
+            {isRepayment
+              ? t('repayment.submit')
+              : t(isCreate ? 'create' : 'save')}
           </SubmitButton>
           {!isCreate && onDelete && (
             <DeletePopup

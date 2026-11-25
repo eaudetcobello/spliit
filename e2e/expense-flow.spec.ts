@@ -45,9 +45,7 @@ test('shows balances and reimbursements in one card before expenses', async ({
   await expect(
     card.getByRole('heading', { name: 'Balances', exact: true }),
   ).toBeVisible()
-  await expect(
-    card.getByRole('heading', { name: 'Suggested reimbursements' }),
-  ).toBeVisible()
+  await expect(card.getByRole('link', { name: 'Settle up' })).toBeVisible()
   await expect(card.getByTestId('reimbursement-row')).toContainText(
     'Bob owes Alice',
   )
@@ -281,4 +279,42 @@ test('shares the group from the header "Group actions" menu', async ({
   await expect(dialog.getByRole('textbox')).toHaveValue(
     new RegExp(`/groups/${groupId}/expenses\?ref=share$`),
   )
+})
+
+test('phrases debts from your side and settles up with one payment', async ({
+  page,
+}) => {
+  const groupId = await createGroup(page, {
+    name: `E2E Settle Up ${uniqueSuffix()}`,
+    participants: ['Alice', 'Bob'],
+  })
+  await addExpense(page, groupId, {
+    title: 'Hotel',
+    amount: '100',
+    paidBy: 'Alice',
+  })
+  const data = await (
+    await page.request.get(`/groups/${groupId}/expenses/export/json`)
+  ).json()
+  const bob = data.participants.find(
+    (p: { name: string }) => p.name === 'Bob',
+  ).id
+  await page.evaluate(
+    ([group, participant]) =>
+      localStorage.setItem(`${group}-activeUser`, participant),
+    [groupId, bob],
+  )
+  await page.goto(`/groups/${groupId}/expenses`)
+
+  const row = page.getByTestId('reimbursement-row')
+  await expect(row).toHaveText(/You owe Alice \$50\.00/)
+  await row.getByRole('link', { name: 'Settle up' }).click()
+  await expect(page.getByTestId('repayment-summary')).toHaveText(
+    'You paid Alice',
+  )
+  await page
+    .getByRole('button', { name: 'Record a payment', exact: true })
+    .click()
+  await page.waitForURL(new RegExp(`/groups/${groupId}/expenses$`))
+  await expect(page.getByText('Everyone is settled up.')).toBeVisible()
 })
