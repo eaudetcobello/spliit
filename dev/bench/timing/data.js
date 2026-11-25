@@ -1,6 +1,6 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791693650347,
-  "repoUrl": "https://github.com/spliit-app/spliit",
+  "lastUpdate": 1795579228357,
+  "repoUrl": "https://github.com/eaudetcobello/spliit",
   "entries": {
     "Spliit performance (timing)": [
       {
@@ -503,6 +503,90 @@ window.BENCHMARK_DATA = {
           {
             "name": "view-expense:edit-form p95",
             "value": 6.28,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155978570+eaudetcobello@users.noreply.github.com",
+            "name": "eaudetcobello",
+            "username": "eaudetcobello"
+          },
+          "committer": {
+            "email": "155978570+eaudetcobello@users.noreply.github.com",
+            "name": "eaudetcobello",
+            "username": "eaudetcobello"
+          },
+          "distinct": true,
+          "id": "c7e72215cb799f4a00f672f75f4560d88e75d188",
+          "message": "Fix the expense card's paid-for order and three failing e2e tests\n\n- List an expense's paid-for participants in the group's participant\n  order. Postgres returned them in insertion order; SQLite returns them\n  by primary key, i.e. by random participant id, so names shuffled from\n  card to card (and \"edits an expense\" failed whenever ids sorted\n  against the form order).\n- Don't let the create form's pending active user overwrite one picked\n  since: it only reaches the group on the expense list's first render,\n  which a user (or the settle-up test) can skip by going straight to\n  \"Add expense\".\n- e2e: expect \"Everyone is settled up.\" after deleting the only expense,\n  the text that replaced \"doesn't need any reimbursement\", and escape the\n  `?` in the share URL regex (`\\?` in a template literal is just `?`).\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-24T22:56:48-05:00",
+          "tree_id": "3c699a2833f0c37d6483f6f9a354c8df9f03e230",
+          "url": "https://github.com/eaudetcobello/spliit/commit/c7e72215cb799f4a00f672f75f4560d88e75d188"
+        },
+        "date": 1795579228143,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "list-groups:home p50",
+            "value": 151.27,
+            "unit": "ms"
+          },
+          {
+            "name": "list-groups:home p95",
+            "value": 199.43,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:first-page p50",
+            "value": 8.24,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:first-page p95",
+            "value": 9.87,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:deep-page p50",
+            "value": 6.82,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:deep-page p95",
+            "value": 7.94,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:search p50",
+            "value": 8.38,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:search p95",
+            "value": 10.72,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:balances p50",
+            "value": 114.93,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:balances p95",
+            "value": 146.95,
+            "unit": "ms"
+          },
+          {
+            "name": "view-expense:edit-form p50",
+            "value": 4.24,
+            "unit": "ms"
+          },
+          {
+            "name": "view-expense:edit-form p95",
+            "value": 5.5,
             "unit": "ms"
           }
         ]
