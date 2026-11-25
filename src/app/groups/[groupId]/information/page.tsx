@@ -1,13 +1,4 @@
-import GroupInformation from '@/app/groups/[groupId]/information/group-information'
-import { getTranslations } from 'next-intl/server'
-
-export async function generateMetadata() {
-  const t = await getTranslations('Information')
-
-  return {
-    title: t('title'),
-  }
-}
+import { redirect } from 'next/navigation'
 
 export default async function InformationPage({
   params,
@@ -15,5 +6,5 @@ export default async function InformationPage({
   params: Promise<{ groupId: string }>
 }) {
   const { groupId } = await params
-  return <GroupInformation groupId={groupId} />
+  redirect(`/groups/${groupId}/expenses`)
 }

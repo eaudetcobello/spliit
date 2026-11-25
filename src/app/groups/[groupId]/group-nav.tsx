@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { Activity, BarChart3, Info, Receipt, Settings } from 'lucide-react'
+import { Activity, BarChart3, Receipt, Settings } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -21,7 +21,6 @@ function useSections(groupId: string) {
 
   const sections: Section[] = [
     { value: 'expenses', label: t('Expenses.title'), Icon: Receipt },
-    { value: 'information', label: t('Information.title'), Icon: Info },
     { value: 'stats', label: t('Stats.title'), Icon: BarChart3 },
     { value: 'activity', label: t('Activity.title'), Icon: Activity },
     { value: 'edit', label: t('Settings.title'), Icon: Settings },
@@ -81,7 +80,7 @@ export function GroupMobileNav({ groupId }: { groupId: string }) {
         aria-label="Group"
         className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-[env(safe-area-inset-bottom)]"
       >
-        <ul className="grid grid-cols-5">
+        <ul className="grid grid-cols-4">
           {sections.map(({ value, label, Icon, href, isActive }) => (
             <li key={value}>
               <Link

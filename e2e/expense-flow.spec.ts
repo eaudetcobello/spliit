@@ -58,6 +58,20 @@ test('shows balances and reimbursements in one card before expenses', async ({
   await expect(page).toHaveURL(new RegExp(`/groups/${groupId}/expenses$`))
 })
 
+test('has no Information section', async ({ page }) => {
+  const groupId = await createGroup(page, {
+    name: `E2E No Info ${uniqueSuffix()}`,
+    participants: ['Alice', 'Bob'],
+  })
+  const nav = page.getByRole('navigation', { name: 'Group' })
+  await expect(
+    nav.getByRole('link', { name: 'Expenses', exact: true }),
+  ).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Information' })).toHaveCount(0)
+  await page.goto(`/groups/${groupId}/information`)
+  await expect(page).toHaveURL(new RegExp(`/groups/${groupId}/expenses$`))
+})
+
 test('creates a simple expense with the hidden field defaults', async ({
   page,
 }) => {
