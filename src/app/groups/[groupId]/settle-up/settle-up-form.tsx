@@ -13,7 +13,7 @@ import {
   getCurrencyFromGroup,
 } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Save } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -162,7 +162,11 @@ export function SettleUpForm({ groupId }: { groupId: string }) {
           className="w-full sm:w-auto"
           disabled={!isValidPair || isSaving}
         >
-          {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {isSaving ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4 mr-2" />
+          )}
           {isSaving ? t('saving') : t('submit')}
         </Button>
         <Button variant="ghost" className="w-full sm:w-auto" asChild>
