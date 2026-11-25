@@ -188,6 +188,14 @@
       "simple": "Simple",
       "advanced": "Advanced"
     },
+    "simpleSplit": {
+      "label": "How was this expense split?",
+      "youPaidEqually": "You paid, split equally.",
+      "youAreOwedFull": "You are owed the full amount.",
+      "otherPaidEqually": "{name} paid, split equally.",
+      "otherIsOwedFull": "{name} is owed the full amount.",
+      "custom": "This expense uses a custom split. Pick an option to replace it, or edit it in Advanced."
+    },
     "Income": {
       "create": "Create income",
       "edit": "Edit income",

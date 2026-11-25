@@ -122,6 +122,10 @@ export async function addExpense(
   const submit = page.getByRole('button', { name: 'Create', exact: true })
   await expect(submit).toBeVisible({ timeout: 30_000 })
 
+  // Payer, date and the split live in Advanced; Simple mode reduces them to a
+  // single "How was this expense split?" choice.
+  await useAdvancedMode(page)
+
   await fillStable(page.locator('input[name="title"]'), expense.title)
   // Amount before split mode: BY_AMOUNT re-distributes shares whenever the
   // amount changes, which would wipe values set beforehand.
@@ -131,10 +135,6 @@ export async function addExpense(
   if (expense.date) {
     // The date input spreads no RHF field, so it has no name attribute.
     await fillStable(page.locator('input[type="date"]'), expense.date)
-  }
-
-  if (expense.category || expense.recurrence || expense.notes) {
-    await page.getByRole('button', { name: 'Advanced', exact: true }).click()
   }
 
   if (expense.category) {
@@ -203,7 +203,11 @@ export async function addExpense(
 export async function openTab(page: Page, tab: GroupTab): Promise<void> {
   const path = new RegExp(`/groups/[^/]+/${TAB_PATHS[tab]}(\\?|$)`)
   await clickUntil(
-    () => page.getByRole('tab', { name: tab, exact: true }).click(),
+    () =>
+      page
+        .getByRole('navigation', { name: 'Group' })
+        .getByRole('link', { name: tab, exact: true })
+        .click(),
     () => page.waitForURL(path, { timeout: 5_000 }),
   )
 }
@@ -300,4 +304,11 @@ export function reimbursementRow(
   return page.locator(
     `[data-testid="reimbursement-row"][data-from="${from}"][data-to="${to}"]`,
   )
+}
+
+/** Switches the create-expense form to Advanced mode. */
+export async function useAdvancedMode(page: Page) {
+  const advanced = page.getByRole('button', { name: 'Advanced', exact: true })
+  await advanced.click()
+  await expect(advanced).toHaveAttribute('aria-pressed', 'true')
 }

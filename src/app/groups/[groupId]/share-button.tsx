@@ -12,14 +12,18 @@ import {
 } from '@/components/ui/popover'
 import { Group } from '@/generated/prisma/browser'
 import { useBaseUrl } from '@/lib/hooks'
+import { cn } from '@/lib/utils'
 import { Share } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 type Props = {
   group: Group
+  /** 'icon' for a compact header action, 'labeled' for the desktop nav. */
+  variant?: 'icon' | 'labeled'
+  className?: string
 }
 
-export function ShareButton({ group }: Props) {
+export function ShareButton({ group, variant = 'icon', className }: Props) {
   const t = useTranslations('Share')
   const baseUrl = useBaseUrl()
   const url = baseUrl && `${baseUrl}/groups/${group.id}/expenses?ref=share`
@@ -27,9 +31,26 @@ export function ShareButton({ group }: Props) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button title={t('title')} size="icon" className="flex-shrink-0">
-          <Share className="w-4 h-4" />
-        </Button>
+        {variant === 'labeled' ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn('gap-2 flex-shrink-0', className)}
+          >
+            <Share className="w-4 h-4" />
+            {t('title')}
+          </Button>
+        ) : (
+          <Button
+            title={t('title')}
+            aria-label={t('title')}
+            variant="outline"
+            size="icon"
+            className={cn('h-9 w-9 flex-shrink-0', className)}
+          >
+            <Share className="w-4 h-4" />
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent align="end" className="[&_p]:text-sm flex flex-col gap-3">
         <p>{t('description')}</p>

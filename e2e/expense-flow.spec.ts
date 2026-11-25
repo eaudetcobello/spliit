@@ -1,6 +1,14 @@
-import { addExpense, createGroup, openExpense, uniqueSuffix } from './app'
+import {
+  addExpense,
+  createGroup,
+  expectBalance,
+  openExpense,
+  paidForRow,
+  uniqueSuffix,
+  useAdvancedMode,
+} from './app'
 import { expect, test } from './fixtures'
-import { fieldByLabel, fillStable, selectRadixOption } from './ui'
+import { fieldByLabel, fillStable, selectRadixOption, setChecked } from './ui'
 
 test('opens groups at home without branding or language controls', async ({
   page,
@@ -29,7 +37,9 @@ test('shows balances and reimbursements in one card before expenses', async ({
     paidBy: 'Alice',
   })
   await expect(
-    page.getByRole('tab', { name: 'Balances', exact: true }),
+    page
+      .getByRole('navigation', { name: 'Group' })
+      .getByRole('link', { name: 'Balances', exact: true }),
   ).toHaveCount(0)
   const card = page.getByTestId('balances-card')
   await expect(
@@ -60,6 +70,7 @@ test('creates a simple expense with the hidden field defaults', async ({
     page.getByRole('button', { name: 'Simple', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true')
   for (const label of [
+    'Expense date',
     'Currency of expense',
     'Category',
     'Expense Recurrence',
@@ -67,9 +78,14 @@ test('creates a simple expense with the hidden field defaults', async ({
     await expect(fieldByLabel(page, label)).toHaveCount(0)
   }
   await expect(page.locator('textarea[name="notes"]')).toHaveCount(0)
+  await expect(page.getByTestId('paid-by')).toHaveCount(0)
+  await expect(page.locator('[data-id]')).toHaveCount(0)
+  await expect(
+    page.getByRole('radiogroup', { name: 'How was this expense split?' }),
+  ).toBeVisible()
   await fillStable(page.locator('input[name="title"]'), 'Lunch')
   await fillStable(page.locator('input[name="amount"]'), '25')
-  await selectRadixOption(page, page.getByTestId('paid-by'), 'Alice')
+  await page.getByRole('radio', { name: 'Alice paid, split equally.' }).click()
   await page.getByRole('button', { name: 'Create', exact: true }).click()
   await page.waitForURL(new RegExp(`/groups/${groupId}/expenses$`))
   const data = await (
@@ -84,7 +100,80 @@ test('creates a simple expense with the hidden field defaults', async ({
     originalCurrency: null,
     originalAmount: null,
     category: { name: 'General' },
+    splitMode: 'EVENLY',
   })
+  const ids = Object.fromEntries(
+    data.participants.map((p: { id: string; name: string }) => [p.name, p.id]),
+  )
+  expect(data.expenses[0].paidById).toBe(ids.Alice)
+  expect(
+    data.expenses[0].paidFor
+      .map((p: { participantId: string }) => p.participantId)
+      .sort(),
+  ).toEqual([ids.Alice, ids.Bob].sort())
+})
+
+test('maps the Simple split choices onto payer and split', async ({ page }) => {
+  const groupId = await createGroup(page, {
+    name: `E2E Simple Owed ${uniqueSuffix()}`,
+    participants: ['Alice', 'Bob', 'Carol'],
+  })
+  await page.goto(`/groups/${groupId}/expenses/create`)
+  await fillStable(page.locator('input[name="title"]'), 'Tickets')
+  await fillStable(page.locator('input[name="amount"]'), '60')
+  await page
+    .getByRole('radio', { name: 'Alice is owed the full amount.' })
+    .click()
+
+  // Advanced shows the same split, and switching back keeps the choice.
+  await useAdvancedMode(page)
+  await expect(page.getByTestId('paid-by')).toContainText('Alice')
+  await expect(paidForRow(page, 'Alice').getByRole('checkbox')).toHaveAttribute(
+    'aria-checked',
+    'false',
+  )
+  for (const name of ['Bob', 'Carol']) {
+    await expect(paidForRow(page, name).getByRole('checkbox')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+  }
+  await page.getByRole('button', { name: 'Simple', exact: true }).click()
+  await expect(
+    page.getByRole('radio', { name: 'Alice is owed the full amount.' }),
+  ).toBeChecked()
+
+  await page.getByRole('button', { name: 'Create', exact: true }).click()
+  await page.waitForURL(new RegExp(`/groups/${groupId}/expenses$`))
+  await expectBalance(page, 'Alice', 60)
+  await expectBalance(page, 'Bob', -30)
+  await expectBalance(page, 'Carol', -30)
+})
+
+test('keeps a custom Advanced split in Simple mode until a choice is made', async ({
+  page,
+}) => {
+  const groupId = await createGroup(page, {
+    name: `E2E Simple Custom ${uniqueSuffix()}`,
+    participants: ['Alice', 'Bob', 'Carol'],
+  })
+  await page.goto(`/groups/${groupId}/expenses/create`)
+  await fillStable(page.locator('input[name="title"]'), 'Taxi')
+  await fillStable(page.locator('input[name="amount"]'), '40')
+  await useAdvancedMode(page)
+  await selectRadixOption(page, page.getByTestId('paid-by'), 'Bob')
+  await setChecked(paidForRow(page, 'Carol').getByRole('checkbox'), false)
+  await page.getByRole('button', { name: 'Simple', exact: true }).click()
+  await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
+  await expect(
+    page.getByText('This expense uses a custom split.'),
+  ).toBeVisible()
+
+  await page.getByRole('button', { name: 'Create', exact: true }).click()
+  await page.waitForURL(new RegExp(`/groups/${groupId}/expenses$`))
+  await expectBalance(page, 'Bob', 20)
+  await expectBalance(page, 'Alice', -20)
+  await expectBalance(page, 'Carol', 0)
 })
 
 test('keeps advanced values when switching modes and saving', async ({

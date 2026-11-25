@@ -27,6 +27,8 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Select,
   SelectContent,
@@ -193,11 +195,16 @@ export function ExpenseForm({
   const t = useTranslations('ExpenseForm')
   const locale = useLocale() as Locale
   const isCreate = expense === undefined
-  const [isAdvanced, setIsAdvanced] = useState(!isCreate)
   const searchParams = useSearchParams()
 
   /** Whether the form was opened from a suggested reimbursement ("Mark as paid"). */
   const isRepayment = isCreate && !!searchParams.get('reimbursement')
+  // Simple mode replaces the payer and split fields with a single choice, so
+  // forms that arrive with those already filled in (a repayment) or with a
+  // receipt to look at start in Advanced.
+  const [isAdvanced, setIsAdvanced] = useState(
+    !isCreate || isRepayment || !!searchParams.get('imageUrl'),
+  )
 
   const getSelectedPayer = (field?: { value: string }) => {
     if (isCreate && typeof window !== 'undefined') {
@@ -325,6 +332,75 @@ export function ExpenseForm({
       form.setValue('paidBy', activeUserId)
     }
   }, [activeUserId, form, group.participants, isCreate, isRepayment])
+
+  // Simple mode's "How was this expense split?" options, the active user's
+  // first. Each is an even split with one payer, who is either part of it
+  // ("paid, split equally") or left out of it ("is owed the full amount").
+  const splitChoices = (() => {
+    const me = group.participants.find((p) => p.id === activeUserId)
+    const ordered = me
+      ? [me, ...group.participants.filter((p) => p.id !== me.id)]
+      : group.participants
+    return ordered.flatMap(({ id, name }) => {
+      const isMe = id === me?.id
+      const choices = [
+        {
+          value: encodeSplitChoice('equal', id),
+          label: isMe
+            ? t('simpleSplit.youPaidEqually')
+            : t('simpleSplit.otherPaidEqually', { name }),
+        },
+      ]
+      if (group.participants.length > 1) {
+        choices.push({
+          value: encodeSplitChoice('full', id),
+          label: isMe
+            ? t('simpleSplit.youAreOwedFull')
+            : t('simpleSplit.otherIsOwedFull', { name }),
+        })
+      }
+      return choices
+    })
+  })()
+  // undefined: not chosen yet, so the first option applies (and follows the
+  // active user once it loads). null: the split set in Advanced matches no
+  // option, and is kept until one is picked.
+  const [splitChoice, setSplitChoice] = useState<string | null | undefined>(
+    undefined,
+  )
+  const effectiveSplitChoice =
+    splitChoice === undefined ? (splitChoices[0]?.value ?? null) : splitChoice
+
+  useEffect(() => {
+    if (isAdvanced || !effectiveSplitChoice) return
+    const { kind, payer } = decodeSplitChoice(effectiveSplitChoice)
+    const options = {
+      shouldDirty: true,
+      shouldValidate: form.formState.isSubmitted,
+    }
+    form.setValue('paidBy', payer, options)
+    form.setValue('splitMode', 'EVENLY', options)
+    form.setValue(
+      'paidFor',
+      group.participants
+        .filter(({ id }) => kind === 'equal' || id !== payer)
+        .map(({ id }) => ({ participant: id, shares: '1' })),
+      options,
+    )
+  }, [isAdvanced, effectiveSplitChoice, group.participants, form])
+
+  const switchToSimple = () => {
+    if (isAdvanced) {
+      setSplitChoice(
+        deriveSplitChoice(
+          form.getValues(),
+          group.participants.map((p) => p.id),
+        ),
+      )
+    }
+    setIsAdvanced(false)
+  }
+
   const sendEvent = useAnalytics()
 
   const submit = async (values: ExpenseFormValues) => {
@@ -656,7 +732,7 @@ export function ExpenseForm({
                   size="sm"
                   variant={isAdvanced ? 'outline' : 'default'}
                   aria-pressed={!isAdvanced}
-                  onClick={() => setIsAdvanced(false)}
+                  onClick={switchToSimple}
                 >
                   {t('mode.simple')}
                 </Button>
@@ -711,29 +787,31 @@ export function ExpenseForm({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="expenseDate"
-              render={({ field }) => (
-                <FormItem className="sm:order-1">
-                  <FormLabel>{t(`${sExpense}.DateField.label`)}</FormLabel>
-                  <FormControl>
-                    <Input
-                      className="date-base"
-                      type="date"
-                      defaultValue={formatDate(field.value as Date)}
-                      onChange={(event) => {
-                        return field.onChange(new Date(event.target.value))
-                      }}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t(`${sExpense}.DateField.description`)}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {isAdvanced && (
+              <FormField
+                control={form.control}
+                name="expenseDate"
+                render={({ field }) => (
+                  <FormItem className="sm:order-1">
+                    <FormLabel>{t(`${sExpense}.DateField.label`)}</FormLabel>
+                    <FormControl>
+                      <Input
+                        className="date-base"
+                        type="date"
+                        defaultValue={formatDate(field.value as Date)}
+                        onChange={(event) => {
+                          return field.onChange(new Date(event.target.value))
+                        }}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t(`${sExpense}.DateField.description`)}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {isAdvanced && (
               <FormField
@@ -980,7 +1058,7 @@ export function ExpenseForm({
                   </div>
                   <FormMessage />
 
-                  {!isIncome && (
+                  {isAdvanced && !isIncome && (
                     <FormField
                       control={form.control}
                       name="isReimbursement"
@@ -1005,36 +1083,66 @@ export function ExpenseForm({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="paidBy"
-              render={({ field }) => (
-                <FormItem className={isAdvanced ? 'sm:order-5' : 'sm:order-3'}>
-                  <FormLabel>{t(`${sExpense}.paidByField.label`)}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value ?? ''}
-                  >
-                    <SelectTrigger data-testid="paid-by">
-                      <SelectValue
-                        placeholder={t(`${sExpense}.paidByField.placeholder`)}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {group.participants.map(({ id, name }) => (
-                        <SelectItem key={id} value={id}>
-                          {name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    {t(`${sExpense}.paidByField.description`)}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!isAdvanced && (
+              <div className="space-y-3 sm:order-3 sm:col-span-2">
+                <Label id="simple-split-label">{t('simpleSplit.label')}</Label>
+                <RadioGroup
+                  aria-labelledby="simple-split-label"
+                  value={effectiveSplitChoice ?? ''}
+                  onValueChange={setSplitChoice}
+                  className="grid sm:grid-cols-2 gap-2"
+                >
+                  {splitChoices.map(({ value, label }) => (
+                    <Label
+                      key={value}
+                      htmlFor={`split-${value}`}
+                      className="flex items-center gap-3 rounded-md border p-3 font-normal cursor-pointer has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
+                    >
+                      <RadioGroupItem value={value} id={`split-${value}`} />
+                      {label}
+                    </Label>
+                  ))}
+                </RadioGroup>
+                {effectiveSplitChoice === null && (
+                  <p className="text-sm text-muted-foreground">
+                    {t('simpleSplit.custom')}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {isAdvanced && (
+              <FormField
+                control={form.control}
+                name="paidBy"
+                render={({ field }) => (
+                  <FormItem className="sm:order-5">
+                    <FormLabel>{t(`${sExpense}.paidByField.label`)}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value ?? ''}
+                    >
+                      <SelectTrigger data-testid="paid-by">
+                        <SelectValue
+                          placeholder={t(`${sExpense}.paidByField.placeholder`)}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {group.participants.map(({ id, name }) => (
+                          <SelectItem key={id} value={id}>
+                            {name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {t(`${sExpense}.paidByField.description`)}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             {isAdvanced && (
               <FormField
                 control={form.control}
@@ -1101,422 +1209,437 @@ export function ExpenseForm({
           </CardContent>
         </Card>
 
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle className="flex justify-between">
-              <span>{t(`${sExpense}.paidFor.title`)}</span>
-              <Button
-                variant="link"
-                type="button"
-                className="-my-2 -mx-4"
-                onClick={() => {
-                  const paidFor = form.getValues().paidFor
-                  const allSelected =
-                    paidFor.length === group.participants.length
-                  const newPaidFor = allSelected
-                    ? []
-                    : group.participants.map((p) => ({
-                        participant: p.id,
-                        shares:
-                          paidFor.find((pfor) => pfor.participant === p.id)
-                            ?.shares ?? '1', // Use string to ensure consistent schema handling
-                      }))
-                  form.setValue('paidFor', newPaidFor, {
-                    shouldDirty: true,
-                    shouldTouch: true,
-                    shouldValidate: true,
-                  })
-                  if (allSelected) setShareEdits(new Map())
-                }}
-              >
-                {form.getValues().paidFor.length ===
-                group.participants.length ? (
-                  <>{t('selectNone')}</>
-                ) : (
-                  <>{t('selectAll')}</>
-                )}
-              </Button>
-            </CardTitle>
-            <CardDescription>
-              {t(`${sExpense}.paidFor.description`)}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FormField
-              control={form.control}
-              name="paidFor"
-              render={() => (
-                <FormItem className="sm:order-4 row-span-2 space-y-0">
-                  {group.participants.map(({ id, name }) => (
-                    <FormField
-                      key={id}
-                      control={form.control}
-                      name="paidFor"
-                      render={({ field }) => {
-                        const index = field.value.findIndex(
-                          ({ participant }) => participant === id,
-                        )
-                        const isSelected = index !== -1
-                        const row = field.value[index]
-                        const cleared = shareEdits.get(id) === 'cleared'
-                        const sharesLabel = (
-                          <span
-                            className={cn('text-sm', {
-                              'text-muted': !isSelected,
-                            })}
-                          >
-                            {match(form.getValues().splitMode)
-                              .with('BY_SHARES', () => <>{t('shares')}</>)
-                              .with('BY_PERCENTAGE', () => <>%</>)
-                              .with('BY_AMOUNT', () => <>{group.currency}</>)
-                              .otherwise(() => (
-                                <></>
-                              ))}
-                          </span>
-                        )
-                        return (
-                          <div
-                            data-id={`${id}/${form.getValues().splitMode}/${
-                              group.currency
-                            }`}
-                            className="flex flex-wrap gap-y-4 items-center border-t last-of-type:border-b last-of-type:!mb-4 -mx-6 px-6 py-3"
-                          >
-                            <FormItem className="flex-1 flex flex-row items-start space-x-3 space-y-0">
-                              <FormControl>
-                                <Checkbox
-                                  checked={isSelected}
-                                  onCheckedChange={(checked) => {
-                                    const options = {
-                                      shouldDirty: true,
-                                      shouldTouch: true,
-                                      shouldValidate: true,
-                                    }
-                                    checked
-                                      ? form.setValue(
-                                          'paidFor',
-                                          [
-                                            ...field.value,
-                                            {
-                                              participant: id,
-                                              shares: '1', // Use string to ensure consistent schema handling
-                                            },
-                                          ],
-                                          options,
-                                        )
-                                      : form.setValue(
-                                          'paidFor',
-                                          field.value?.filter(
-                                            (value) => value.participant !== id,
-                                          ),
-                                          options,
-                                        )
-                                    if (!checked) forgetShareEdit(id)
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="text-sm font-normal flex-1">
-                                {name}
-                                {isSelected &&
-                                  !form.watch('isReimbursement') && (
-                                    <span className="text-muted-foreground ml-2">
-                                      (
-                                      {formatCurrency(
-                                        groupCurrency,
-                                        calculateShare(id, {
-                                          // The id seeds who takes the
-                                          // leftover minor unit of an uneven
-                                          // split, so passing the one the
-                                          // expense has (or will be created
-                                          // with) makes the amounts here match
-                                          // the balances tab once saved.
-                                          id: expense?.id ?? expenseId,
-                                          amount: amountAsMinorUnits(
-                                            Number(form.watch('amount')),
-                                            groupCurrency,
-                                          ), // Convert to cents
-                                          paidFor: field.value.map(
-                                            ({ participant, shares }) => ({
-                                              participant: {
-                                                id: participant,
-                                                name: '',
-                                                groupId: '',
+        {isAdvanced && (
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="flex justify-between">
+                <span>{t(`${sExpense}.paidFor.title`)}</span>
+                <Button
+                  variant="link"
+                  type="button"
+                  className="-my-2 -mx-4"
+                  onClick={() => {
+                    const paidFor = form.getValues().paidFor
+                    const allSelected =
+                      paidFor.length === group.participants.length
+                    const newPaidFor = allSelected
+                      ? []
+                      : group.participants.map((p) => ({
+                          participant: p.id,
+                          shares:
+                            paidFor.find((pfor) => pfor.participant === p.id)
+                              ?.shares ?? '1', // Use string to ensure consistent schema handling
+                        }))
+                    form.setValue('paidFor', newPaidFor, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    })
+                    if (allSelected) setShareEdits(new Map())
+                  }}
+                >
+                  {form.getValues().paidFor.length ===
+                  group.participants.length ? (
+                    <>{t('selectNone')}</>
+                  ) : (
+                    <>{t('selectAll')}</>
+                  )}
+                </Button>
+              </CardTitle>
+              <CardDescription>
+                {t(`${sExpense}.paidFor.description`)}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="paidFor"
+                render={() => (
+                  <FormItem className="sm:order-4 row-span-2 space-y-0">
+                    {group.participants.map(({ id, name }) => (
+                      <FormField
+                        key={id}
+                        control={form.control}
+                        name="paidFor"
+                        render={({ field }) => {
+                          const index = field.value.findIndex(
+                            ({ participant }) => participant === id,
+                          )
+                          const isSelected = index !== -1
+                          const row = field.value[index]
+                          const cleared = shareEdits.get(id) === 'cleared'
+                          const sharesLabel = (
+                            <span
+                              className={cn('text-sm', {
+                                'text-muted': !isSelected,
+                              })}
+                            >
+                              {match(form.getValues().splitMode)
+                                .with('BY_SHARES', () => <>{t('shares')}</>)
+                                .with('BY_PERCENTAGE', () => <>%</>)
+                                .with('BY_AMOUNT', () => <>{group.currency}</>)
+                                .otherwise(() => (
+                                  <></>
+                                ))}
+                            </span>
+                          )
+                          return (
+                            <div
+                              data-id={`${id}/${form.getValues().splitMode}/${
+                                group.currency
+                              }`}
+                              className="flex flex-wrap gap-y-4 items-center border-t last-of-type:border-b last-of-type:!mb-4 -mx-6 px-6 py-3"
+                            >
+                              <FormItem className="flex-1 flex flex-row items-start space-x-3 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={(checked) => {
+                                      const options = {
+                                        shouldDirty: true,
+                                        shouldTouch: true,
+                                        shouldValidate: true,
+                                      }
+                                      checked
+                                        ? form.setValue(
+                                            'paidFor',
+                                            [
+                                              ...field.value,
+                                              {
+                                                participant: id,
+                                                shares: '1', // Use string to ensure consistent schema handling
                                               },
-                                              shares:
-                                                form.watch('splitMode') ===
-                                                'BY_PERCENTAGE'
-                                                  ? Number(shares) * 100 // Convert percentage to basis points (e.g., 50% -> 5000)
-                                                  : form.watch('splitMode') ===
-                                                      'BY_AMOUNT'
-                                                    ? amountAsMinorUnits(
-                                                        Number(shares),
-                                                        groupCurrency,
-                                                      )
-                                                    : Number(shares),
-                                              expenseId: '',
-                                              participantId: '',
-                                            }),
-                                          ),
-                                          splitMode: form.watch(
-                                            'splitMode',
-                                          ) as SplitMode,
-                                          isReimbursement:
-                                            form.watch('isReimbursement'),
-                                        }),
-                                        locale,
-                                      )}
-                                      )
-                                    </span>
+                                            ],
+                                            options,
+                                          )
+                                        : form.setValue(
+                                            'paidFor',
+                                            field.value?.filter(
+                                              (value) =>
+                                                value.participant !== id,
+                                            ),
+                                            options,
+                                          )
+                                      if (!checked) forgetShareEdit(id)
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="text-sm font-normal flex-1">
+                                  {name}
+                                  {isSelected &&
+                                    !form.watch('isReimbursement') && (
+                                      <span className="text-muted-foreground ml-2">
+                                        (
+                                        {formatCurrency(
+                                          groupCurrency,
+                                          calculateShare(id, {
+                                            // The id seeds who takes the
+                                            // leftover minor unit of an uneven
+                                            // split, so passing the one the
+                                            // expense has (or will be created
+                                            // with) makes the amounts here match
+                                            // the balances tab once saved.
+                                            id: expense?.id ?? expenseId,
+                                            amount: amountAsMinorUnits(
+                                              Number(form.watch('amount')),
+                                              groupCurrency,
+                                            ), // Convert to cents
+                                            paidFor: field.value.map(
+                                              ({ participant, shares }) => ({
+                                                participant: {
+                                                  id: participant,
+                                                  name: '',
+                                                  groupId: '',
+                                                },
+                                                shares:
+                                                  form.watch('splitMode') ===
+                                                  'BY_PERCENTAGE'
+                                                    ? Number(shares) * 100 // Convert percentage to basis points (e.g., 50% -> 5000)
+                                                    : form.watch(
+                                                          'splitMode',
+                                                        ) === 'BY_AMOUNT'
+                                                      ? amountAsMinorUnits(
+                                                          Number(shares),
+                                                          groupCurrency,
+                                                        )
+                                                      : Number(shares),
+                                                expenseId: '',
+                                                participantId: '',
+                                              }),
+                                            ),
+                                            splitMode: form.watch(
+                                              'splitMode',
+                                            ) as SplitMode,
+                                            isReimbursement:
+                                              form.watch('isReimbursement'),
+                                          }),
+                                          locale,
+                                        )}
+                                        )
+                                      </span>
+                                    )}
+                                </FormLabel>
+                              </FormItem>
+                              <div className="flex flex-wrap justify-end gap-y-2">
+                                {form.getValues().splitMode === 'BY_AMOUNT' &&
+                                  !!conversionRequired && (
+                                    <FormFieldScope
+                                      name={`paidFor.${index}.originalAmount`}
+                                    >
+                                      <div>
+                                        <div className="flex gap-1 items-center">
+                                          <span
+                                            className={cn('text-sm', {
+                                              'text-muted': !isSelected,
+                                            })}
+                                          >
+                                            {originalCurrency.symbol}
+                                          </span>
+                                          <FormControl>
+                                            <Input
+                                              key={String(!isSelected)}
+                                              className="text-base w-[80px] -my-2"
+                                              type="text"
+                                              inputMode="decimal"
+                                              disabled={!isSelected}
+                                              value={
+                                                cleared
+                                                  ? ''
+                                                  : (row?.originalAmount ?? '')
+                                              }
+                                              // The part of the remainder this
+                                              // participant takes, in the
+                                              // currency typed here
+                                              placeholder={
+                                                (cleared &&
+                                                  exchangeRate.data &&
+                                                  convertToOriginalCurrency(
+                                                    Number(row?.shares),
+                                                    exchangeRate.data,
+                                                    originalCurrency,
+                                                  )) ||
+                                                undefined
+                                              }
+                                              onChange={(event) => {
+                                                const value =
+                                                  enforceCurrencyPattern(
+                                                    event.target.value,
+                                                    originalCurrency,
+                                                  )
+                                                const originalAmount =
+                                                  Number(value)
+                                                let convertedAmount = ''
+                                                if (
+                                                  value !== '' &&
+                                                  !Number.isNaN(
+                                                    originalAmount,
+                                                  ) &&
+                                                  exchangeRate.data
+                                                ) {
+                                                  convertedAmount = (
+                                                    originalAmount *
+                                                    exchangeRate.data
+                                                  ).toFixed(
+                                                    groupCurrency.decimal_digits,
+                                                  )
+                                                }
+                                                field.onChange(
+                                                  field.value.map((p) =>
+                                                    p.participant === id
+                                                      ? {
+                                                          participant: id,
+                                                          originalAmount: value,
+                                                          shares:
+                                                            enforceCurrencyPattern(
+                                                              convertedAmount,
+                                                              groupCurrency,
+                                                            ),
+                                                        }
+                                                      : p,
+                                                  ),
+                                                )
+                                                markShareEdited(
+                                                  id,
+                                                  value === '',
+                                                )
+                                              }}
+                                              step={
+                                                10 **
+                                                -originalCurrency.decimal_digits
+                                              }
+                                            />
+                                          </FormControl>
+                                          <ChevronRight className="h-4 w-4 mx-1 opacity-50" />
+                                        </div>
+                                      </div>
+                                    </FormFieldScope>
                                   )}
-                              </FormLabel>
-                            </FormItem>
-                            <div className="flex flex-wrap justify-end gap-y-2">
-                              {form.getValues().splitMode === 'BY_AMOUNT' &&
-                                !!conversionRequired && (
+                                {form.getValues().splitMode !== 'EVENLY' && (
                                   <FormFieldScope
-                                    name={`paidFor.${index}.originalAmount`}
+                                    name={`paidFor.${index}.shares`}
                                   >
                                     <div>
                                       <div className="flex gap-1 items-center">
-                                        <span
-                                          className={cn('text-sm', {
-                                            'text-muted': !isSelected,
-                                          })}
-                                        >
-                                          {originalCurrency.symbol}
-                                        </span>
+                                        {form.getValues().splitMode ===
+                                          'BY_AMOUNT' && sharesLabel}
                                         <FormControl>
                                           <Input
                                             key={String(!isSelected)}
                                             className="text-base w-[80px] -my-2"
                                             type="text"
-                                            inputMode="decimal"
                                             disabled={!isSelected}
-                                            value={
-                                              cleared
-                                                ? ''
-                                                : (row?.originalAmount ?? '')
-                                            }
-                                            // The part of the remainder this
-                                            // participant takes, in the
-                                            // currency typed here
+                                            value={cleared ? '' : row?.shares}
                                             placeholder={
-                                              (cleared &&
-                                                exchangeRate.data &&
-                                                convertToOriginalCurrency(
-                                                  Number(row?.shares),
-                                                  exchangeRate.data,
-                                                  originalCurrency,
-                                                )) ||
-                                              undefined
+                                              cleared
+                                                ? String(row?.shares ?? '')
+                                                : undefined
                                             }
                                             onChange={(event) => {
-                                              const value =
+                                              const shares =
                                                 enforceCurrencyPattern(
                                                   event.target.value,
-                                                  originalCurrency,
+                                                  form.getValues().splitMode ===
+                                                    'BY_AMOUNT'
+                                                    ? groupCurrency
+                                                    : undefined,
                                                 )
-                                              const originalAmount =
-                                                Number(value)
-                                              let convertedAmount = ''
-                                              if (
-                                                value !== '' &&
-                                                !Number.isNaN(originalAmount) &&
-                                                exchangeRate.data
-                                              ) {
-                                                convertedAmount = (
-                                                  originalAmount *
-                                                  exchangeRate.data
-                                                ).toFixed(
-                                                  groupCurrency.decimal_digits,
-                                                )
-                                              }
                                               field.onChange(
                                                 field.value.map((p) =>
                                                   p.participant === id
                                                     ? {
                                                         participant: id,
-                                                        originalAmount: value,
-                                                        shares:
-                                                          enforceCurrencyPattern(
-                                                            convertedAmount,
-                                                            groupCurrency,
-                                                          ),
+                                                        shares,
                                                       }
                                                     : p,
                                                 ),
                                               )
-                                              markShareEdited(id, value === '')
+                                              markShareEdited(id, shares === '')
                                             }}
+                                            inputMode={
+                                              form.getValues().splitMode ===
+                                              'BY_AMOUNT'
+                                                ? 'decimal'
+                                                : 'numeric'
+                                            }
                                             step={
-                                              10 **
-                                              -originalCurrency.decimal_digits
+                                              form.getValues().splitMode ===
+                                              'BY_AMOUNT'
+                                                ? 10 **
+                                                  -groupCurrency.decimal_digits
+                                                : 1
                                             }
                                           />
                                         </FormControl>
-                                        <ChevronRight className="h-4 w-4 mx-1 opacity-50" />
+                                        {[
+                                          'BY_SHARES',
+                                          'BY_PERCENTAGE',
+                                        ].includes(
+                                          form.getValues().splitMode!,
+                                        ) && sharesLabel}
                                       </div>
+                                      <FormMessage className="float-right" />
                                     </div>
                                   </FormFieldScope>
                                 )}
-                              {form.getValues().splitMode !== 'EVENLY' && (
-                                <FormFieldScope
-                                  name={`paidFor.${index}.shares`}
-                                >
-                                  <div>
-                                    <div className="flex gap-1 items-center">
-                                      {form.getValues().splitMode ===
-                                        'BY_AMOUNT' && sharesLabel}
-                                      <FormControl>
-                                        <Input
-                                          key={String(!isSelected)}
-                                          className="text-base w-[80px] -my-2"
-                                          type="text"
-                                          disabled={!isSelected}
-                                          value={cleared ? '' : row?.shares}
-                                          placeholder={
-                                            cleared
-                                              ? String(row?.shares ?? '')
-                                              : undefined
-                                          }
-                                          onChange={(event) => {
-                                            const shares =
-                                              enforceCurrencyPattern(
-                                                event.target.value,
-                                                form.getValues().splitMode ===
-                                                  'BY_AMOUNT'
-                                                  ? groupCurrency
-                                                  : undefined,
-                                              )
-                                            field.onChange(
-                                              field.value.map((p) =>
-                                                p.participant === id
-                                                  ? { participant: id, shares }
-                                                  : p,
-                                              ),
-                                            )
-                                            markShareEdited(id, shares === '')
-                                          }}
-                                          inputMode={
-                                            form.getValues().splitMode ===
-                                            'BY_AMOUNT'
-                                              ? 'decimal'
-                                              : 'numeric'
-                                          }
-                                          step={
-                                            form.getValues().splitMode ===
-                                            'BY_AMOUNT'
-                                              ? 10 **
-                                                -groupCurrency.decimal_digits
-                                              : 1
-                                          }
-                                        />
-                                      </FormControl>
-                                      {['BY_SHARES', 'BY_PERCENTAGE'].includes(
-                                        form.getValues().splitMode!,
-                                      ) && sharesLabel}
-                                    </div>
-                                    <FormMessage className="float-right" />
-                                  </div>
-                                </FormFieldScope>
-                              )}
+                              </div>
                             </div>
-                          </div>
-                        )
-                      }}
+                          )
+                        }}
+                      />
+                    ))}
+                    <FormMessage values={splitSumValues} />
+                  </FormItem>
+                )}
+              />
+
+              <Collapsible
+                className="mt-5"
+                defaultOpen={form.getValues().splitMode !== 'EVENLY'}
+              >
+                <CollapsibleTrigger asChild>
+                  <Button variant="link" className="-mx-4">
+                    {t('advancedOptions')}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="grid sm:grid-cols-2 gap-6 pt-3">
+                    <FormField
+                      control={form.control}
+                      name="splitMode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('SplitModeField.label')}</FormLabel>
+                          <FormControl>
+                            <Select
+                              onValueChange={(value) => {
+                                form.setValue('splitMode', value as any, {
+                                  shouldDirty: true,
+                                  shouldTouch: true,
+                                  shouldValidate: true,
+                                })
+                                // Validating `splitMode` leaves a "must add up"
+                                // error from the previous mode in place, and its
+                                // message would now be given the values of the
+                                // new mode. Check the shares again for this one.
+                                if (form.getFieldState('paidFor').error) {
+                                  form.clearErrors('paidFor')
+                                  void form.trigger('paidFor')
+                                }
+                              }}
+                              defaultValue={field.value}
+                            >
+                              <SelectTrigger data-testid="split-mode">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="EVENLY">
+                                  {t('SplitModeField.evenly')}
+                                </SelectItem>
+                                <SelectItem value="BY_SHARES">
+                                  {t('SplitModeField.byShares')}
+                                </SelectItem>
+                                <SelectItem value="BY_PERCENTAGE">
+                                  {t('SplitModeField.byPercentage')}
+                                </SelectItem>
+                                <SelectItem value="BY_AMOUNT">
+                                  {t('SplitModeField.byAmount')}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormDescription>
+                            {t(`${sExpense}.splitModeDescription`)}
+                          </FormDescription>
+                        </FormItem>
+                      )}
                     />
-                  ))}
-                  <FormMessage values={splitSumValues} />
-                </FormItem>
-              )}
-            />
+                    <FormField
+                      control={form.control}
+                      name="saveDefaultSplittingOptions"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row gap-2 items-center space-y-0 pt-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div>
+                            <FormLabel>
+                              {t('SplitModeField.saveAsDefault')}
+                            </FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </CardContent>
+          </Card>
+        )}
 
-            <Collapsible
-              className="mt-5"
-              defaultOpen={form.getValues().splitMode !== 'EVENLY'}
-            >
-              <CollapsibleTrigger asChild>
-                <Button variant="link" className="-mx-4">
-                  {t('advancedOptions')}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="grid sm:grid-cols-2 gap-6 pt-3">
-                  <FormField
-                    control={form.control}
-                    name="splitMode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('SplitModeField.label')}</FormLabel>
-                        <FormControl>
-                          <Select
-                            onValueChange={(value) => {
-                              form.setValue('splitMode', value as any, {
-                                shouldDirty: true,
-                                shouldTouch: true,
-                                shouldValidate: true,
-                              })
-                              // Validating `splitMode` leaves a "must add up"
-                              // error from the previous mode in place, and its
-                              // message would now be given the values of the
-                              // new mode. Check the shares again for this one.
-                              if (form.getFieldState('paidFor').error) {
-                                form.clearErrors('paidFor')
-                                void form.trigger('paidFor')
-                              }
-                            }}
-                            defaultValue={field.value}
-                          >
-                            <SelectTrigger data-testid="split-mode">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="EVENLY">
-                                {t('SplitModeField.evenly')}
-                              </SelectItem>
-                              <SelectItem value="BY_SHARES">
-                                {t('SplitModeField.byShares')}
-                              </SelectItem>
-                              <SelectItem value="BY_PERCENTAGE">
-                                {t('SplitModeField.byPercentage')}
-                              </SelectItem>
-                              <SelectItem value="BY_AMOUNT">
-                                {t('SplitModeField.byAmount')}
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormDescription>
-                          {t(`${sExpense}.splitModeDescription`)}
-                        </FormDescription>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="saveDefaultSplittingOptions"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row gap-2 items-center space-y-0 pt-2">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div>
-                          <FormLabel>
-                            {t('SplitModeField.saveAsDefault')}
-                          </FormLabel>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </CardContent>
-        </Card>
-
-        {runtimeFeatureFlags.enableExpenseDocuments && (
+        {isAdvanced && runtimeFeatureFlags.enableExpenseDocuments && (
           <Card className="mt-4">
             <CardHeader>
               <CardTitle className="flex justify-between">
@@ -1573,6 +1696,42 @@ export function ExpenseForm({
       </form>
     </Form>
   )
+}
+
+type SplitChoiceKind = 'equal' | 'full'
+
+function encodeSplitChoice(kind: SplitChoiceKind, payer: string) {
+  return `${kind}:${payer}`
+}
+
+function decodeSplitChoice(value: string) {
+  const separator = value.indexOf(':')
+  return {
+    kind: value.slice(0, separator) as SplitChoiceKind,
+    payer: value.slice(separator + 1),
+  }
+}
+
+/**
+ * The Simple-mode option that describes a split set in Advanced, or null when
+ * none does (an uneven split, or one that leaves out someone besides the payer).
+ */
+function deriveSplitChoice(
+  values: ExpenseFormInput,
+  participantIds: string[],
+): string | null {
+  const payer = values.paidBy
+  if (!payer || values.splitMode !== 'EVENLY') return null
+  const paidFor = new Set(
+    (values.paidFor ?? []).flatMap((p) => (p ? [p.participant] : [])),
+  )
+  const isExactly = (ids: string[]) =>
+    ids.length === paidFor.size && ids.every((id) => paidFor.has(id))
+  const others = participantIds.filter((id) => id !== payer)
+  if (isExactly(participantIds)) return encodeSplitChoice('equal', payer)
+  if (others.length > 0 && isExactly(others))
+    return encodeSplitChoice('full', payer)
+  return null
 }
 
 function formatDate(date?: Date) {

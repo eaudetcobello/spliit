@@ -6,6 +6,7 @@ import {
   openExpense,
   openTab,
   uniqueSuffix,
+  useAdvancedMode,
 } from './app'
 import { expect, test } from './fixtures'
 import { fieldByLabel, fillStable, money } from './ui'
@@ -22,6 +23,7 @@ test('records a negative amount as an income', async ({ page }) => {
   await expect(
     page.getByRole('button', { name: 'Create', exact: true }),
   ).toBeVisible({ timeout: 30_000 })
+  await useAdvancedMode(page)
 
   await fillStable(page.locator('input[name="title"]'), 'Deposit refund')
   await fillStable(page.locator('input[name="amount"]'), '-90')
