@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAnalytics } from '@/lib/analytics/context'
-import { Download, FileDown, FileJson } from 'lucide-react'
+import { FileDown, FileJson, MoreVertical } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
@@ -23,11 +23,17 @@ export default function ExportButton({ groupId }: { groupId: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button title={t('export')} variant="secondary" size="icon">
-          <Download className="w-4 h-4" />
+        <Button
+          title={t('moreActions')}
+          aria-label={t('moreActions')}
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground"
+        >
+          <MoreVertical className="w-4 h-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
+      <DropdownMenuContent align="end">
         <DropdownMenuItem asChild>
           <Link
             prefetch={false}

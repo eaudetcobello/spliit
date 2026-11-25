@@ -248,3 +248,20 @@ test('keeps advanced values when switching modes and saving', async ({
     fieldByLabel(page, 'Expense Recurrence').getByRole('combobox'),
   ).toContainText('Monthly')
 })
+
+test('keeps export behind the expenses "More actions" menu', async ({
+  page,
+}) => {
+  await createGroup(page, {
+    name: `E2E Export Menu ${uniqueSuffix()}`,
+    participants: ['Alice', 'Bob'],
+  })
+  await expect(page.getByTitle('Export', { exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'More actions' }).click()
+  await expect(
+    page.getByRole('menuitem', { name: 'Export to JSON' }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('menuitem', { name: 'Export to CSV' }),
+  ).toBeVisible()
+})
