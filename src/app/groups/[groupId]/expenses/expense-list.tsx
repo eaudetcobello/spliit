@@ -37,12 +37,12 @@ export function ExpenseList() {
     if (activeUser || newUser) {
       localStorage.removeItem('newGroup-activeUser')
       localStorage.removeItem(`${groupId}-newUser`)
-      // The create form's choice only reaches this list on its first render.
-      // If the user left before that (straight to "Add expense", say) and
-      // picked someone since, that later choice wins.
-      if (readActiveUser(groupId) !== null) return
       if (activeUser === 'None') {
-        saveActiveUser(groupId, 'None')
+        // 'None' only means nobody was picked, so it must not overwrite a pick
+        // made since: the create form's value reaches this list on its first
+        // render, which the user may have skipped by going straight to "Add
+        // expense" and choosing someone there.
+        if (readActiveUser(groupId) === null) saveActiveUser(groupId, 'None')
       } else {
         const userId = participants.find(
           (p) => p.name === (activeUser || newUser),
