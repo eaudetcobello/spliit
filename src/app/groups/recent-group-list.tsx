@@ -1,6 +1,6 @@
 'use client'
 
-import { AddGroupByUrlButton } from '@/app/groups/add-group-by-url-button'
+import { AddGroupByUrlDialog } from '@/app/groups/add-group-by-url-button'
 import {
   forgetGroups,
   getArchivedGroups,
@@ -9,11 +9,17 @@ import {
   RecentGroups,
 } from '@/app/groups/recent-groups-helpers'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { getGroups } from '@/lib/api'
 import { MAX_GROUPS_PER_QUERY } from '@/lib/group-query-limits'
 import { trpc } from '@/trpc/client'
 import { AppRouterOutput } from '@/trpc/routers/_app'
-import { Loader2 } from 'lucide-react'
+import { Link as LinkIcon, Loader2, MoreVertical, Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import {
@@ -262,21 +268,48 @@ function GroupsPage({
   reload,
 }: PropsWithChildren<{ reload: () => void }>) {
   const t = useTranslations('Groups')
+  const [addByUrlOpen, setAddByUrlOpen] = useState(false)
   return (
     <>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <h1 className="font-bold text-2xl flex-1">
           <Link href="/groups">{t('myGroups')}</Link>
         </h1>
-        <div className="flex gap-2">
-          <AddGroupByUrlButton reload={reload} />
-          <Button asChild>
-            <Link href="/groups/create">
-              {/* <Plus className="w-4 h-4 mr-2" /> */}
-              {t('create')}
-            </Link>
-          </Button>
-        </div>
+        {/* Not modal, so closing it does not fight the dialog it opens over
+            focus and pointer events. */}
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              title={t('moreActions')}
+              aria-label={t('moreActions')}
+              className="text-muted-foreground"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild className="gap-2">
+              <Link href="/groups/create">
+                <Plus className="w-4 h-4" />
+                {t('createGroup')}
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="gap-2"
+              onSelect={() => setAddByUrlOpen(true)}
+            >
+              <LinkIcon className="w-4 h-4" />
+              {t('AddByURL.button')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <AddGroupByUrlDialog
+          reload={reload}
+          open={addByUrlOpen}
+          onOpenChange={setAddByUrlOpen}
+        />
       </div>
       <div>{children}</div>
     </>

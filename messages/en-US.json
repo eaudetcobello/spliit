@@ -62,6 +62,7 @@
     "myGroups": "My groups",
     "create": "Create",
     "createGroup": "Create group",
+    "moreActions": "More actions",
     "loadingRecent": "Loading recent groups…",
     "loadError": "Could not load your groups. Try again.",
     "retry": "Retry",

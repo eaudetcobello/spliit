@@ -318,3 +318,22 @@ test('phrases debts from your side and settles up with one payment', async ({
   await page.waitForURL(new RegExp(`/groups/${groupId}/expenses$`))
   await expect(page.getByText('Everyone is settled up.')).toBeVisible()
 })
+
+test('keeps Create and Add by URL in the groups page menu', async ({
+  page,
+}) => {
+  await page.goto('/groups')
+  await expect(
+    page.getByRole('button', { name: 'Add by URL', exact: true }),
+  ).toHaveCount(0)
+  await page.getByRole('button', { name: 'More actions' }).click()
+  await page.getByRole('menuitem', { name: 'Add by URL' }).click()
+  await expect(
+    page.getByRole('dialog', { name: 'Add a group by URL' }),
+  ).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  await page.getByRole('button', { name: 'More actions' }).click()
+  await page.getByRole('menuitem', { name: 'Create group' }).click()
+  await expect(page).toHaveURL(/\/groups\/create$/)
+})

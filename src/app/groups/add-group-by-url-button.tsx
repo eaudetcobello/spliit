@@ -1,12 +1,14 @@
 import { saveRecentGroup } from '@/app/groups/recent-groups-helpers'
 import { QrCodeScanner } from '@/components/qr-code-scanner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { useMediaQuery } from '@/lib/hooks'
 import { trpc } from '@/trpc/client'
 import { Link as LinkIcon, Loader2, Plus, QrCode } from 'lucide-react'
@@ -15,15 +17,17 @@ import { useState } from 'react'
 
 type Props = {
   reload: () => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
-export function AddGroupByUrlButton({ reload }: Props) {
+/** "Add a group by URL", opened from the groups page's three-dot menu. */
+export function AddGroupByUrlDialog({ reload, open, onOpenChange }: Props) {
   const t = useTranslations('Groups.AddByURL')
   const isDesktop = useMediaQuery('(min-width: 640px)')
   const [url, setUrl] = useState('')
   const [error, setError] = useState(false)
   const [scanError, setScanError] = useState('')
-  const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [scanMode, setScanMode] = useState(false)
   const utils = trpc.useUtils()
@@ -60,7 +64,7 @@ export function AddGroupByUrlButton({ reload }: Props) {
         saveRecentGroup({ id: group.id, name: group.name })
         reload()
         setUrl('')
-        setOpen(false)
+        onOpenChange(false)
         setScanMode(false)
         setError(false)
         setScanError('')
@@ -77,16 +81,12 @@ export function AddGroupByUrlButton({ reload }: Props) {
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="secondary">{t('button')}</Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align={isDesktop ? 'end' : 'start'}
-        className="[&_p]:text-sm flex flex-col gap-3"
-      >
-        <h3 className="font-bold">{t('title')}</h3>
-        <p>{t('description')}</p>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[480px] [&_p]:text-sm flex flex-col gap-3">
+        <DialogHeader>
+          <DialogTitle>{t('title')}</DialogTitle>
+          <DialogDescription>{t('description')}</DialogDescription>
+        </DialogHeader>
 
         {!isDesktop && (
           <div className="flex gap-2 border-b pb-3 flex-wrap">
@@ -170,7 +170,7 @@ export function AddGroupByUrlButton({ reload }: Props) {
 
         {error && <p className="text-destructive">{t('error')}</p>}
         {scanError && <p className="text-destructive">{scanError}</p>}
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   )
 }
