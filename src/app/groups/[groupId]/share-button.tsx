@@ -4,56 +4,82 @@ import { CopyButton } from '@/components/copy-button'
 import { ShareQrCodeDialog } from '@/components/share-qr-code-dialog'
 import { ShareUrlButton } from '@/components/share-url-button'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
 import { Group } from '@/generated/prisma/browser'
 import { useBaseUrl } from '@/lib/hooks'
-import { cn } from '@/lib/utils'
-import { Share } from 'lucide-react'
+import { MoreVertical, Share } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 
-type Props = {
-  group: Group
-  /** 'icon' for a compact header action, 'labeled' for the desktop nav. */
-  variant?: 'icon' | 'labeled'
-  className?: string
+/** The group's three-dot menu in the header. Sharing opens a dialog. */
+export function GroupActionsMenu({ group }: { group: Group }) {
+  const t = useTranslations('Share')
+  const [shareOpen, setShareOpen] = useState(false)
+
+  return (
+    <>
+      {/* Not modal, so closing it does not fight the dialog it opens over
+          focus and pointer events. */}
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            title={t('groupActions')}
+            aria-label={t('groupActions')}
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 flex-shrink-0 text-muted-foreground"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            className="gap-2"
+            onSelect={() => setShareOpen(true)}
+          >
+            <Share className="w-4 h-4" />
+            {t('title')}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ShareDialog group={group} open={shareOpen} onOpenChange={setShareOpen} />
+    </>
+  )
 }
 
-export function ShareButton({ group, variant = 'icon', className }: Props) {
+function ShareDialog({
+  group,
+  open,
+  onOpenChange,
+}: {
+  group: Group
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const t = useTranslations('Share')
   const baseUrl = useBaseUrl()
   const url = baseUrl && `${baseUrl}/groups/${group.id}/expenses?ref=share`
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        {variant === 'labeled' ? (
-          <Button
-            variant="outline"
-            size="sm"
-            className={cn('gap-2 flex-shrink-0', className)}
-          >
-            <Share className="w-4 h-4" />
-            {t('title')}
-          </Button>
-        ) : (
-          <Button
-            title={t('title')}
-            aria-label={t('title')}
-            variant="outline"
-            size="icon"
-            className={cn('h-9 w-9 flex-shrink-0', className)}
-          >
-            <Share className="w-4 h-4" />
-          </Button>
-        )}
-      </PopoverTrigger>
-      <PopoverContent align="end" className="[&_p]:text-sm flex flex-col gap-3">
-        <p>{t('description')}</p>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>{t('title')}</DialogTitle>
+          <DialogDescription>{t('description')}</DialogDescription>
+        </DialogHeader>
         {url && (
           <div className="flex gap-2">
             <Input className="flex-1" defaultValue={url} readOnly />
@@ -66,10 +92,10 @@ export function ShareButton({ group, variant = 'icon', className }: Props) {
             <ShareQrCodeDialog url={url} groupName={group.name} />
           </div>
         )}
-        <p>
+        <p className="text-sm">
           <strong>{t('warning')}</strong> {t('warningHelp')}
         </p>
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   )
 }

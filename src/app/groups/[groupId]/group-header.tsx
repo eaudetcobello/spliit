@@ -2,7 +2,7 @@
 
 import { ActiveUserModal } from '@/app/groups/[groupId]/expenses/active-user-modal'
 import { GroupDesktopNav } from '@/app/groups/[groupId]/group-nav'
-import { ShareButton } from '@/app/groups/[groupId]/share-button'
+import { GroupActionsMenu } from '@/app/groups/[groupId]/share-button'
 import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
 import { useCurrentGroup } from './current-group-context'
@@ -27,17 +27,12 @@ export const GroupHeader = () => {
             {/* Asks who you are on a first visit. Change it later in
                 Settings. */}
             <ActiveUserModal groupId={groupId} />
-            {/* On mobile, sharing sits in the header; on desktop it moves to
-                the end of the section nav. */}
-            <ShareButton group={group} className="md:hidden" />
+            <GroupActionsMenu group={group} />
           </>
         )}
       </div>
 
-      <GroupDesktopNav
-        groupId={groupId}
-        actions={group && <ShareButton group={group} variant="labeled" />}
-      />
+      <GroupDesktopNav groupId={groupId} />
     </div>
   )
 }

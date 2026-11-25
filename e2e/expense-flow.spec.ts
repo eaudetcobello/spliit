@@ -265,3 +265,20 @@ test('keeps export behind the expenses "More actions" menu', async ({
     page.getByRole('menuitem', { name: 'Export to CSV' }),
   ).toBeVisible()
 })
+
+test('shares the group from the header "Group actions" menu', async ({
+  page,
+}) => {
+  const groupId = await createGroup(page, {
+    name: `E2E Share Menu ${uniqueSuffix()}`,
+    participants: ['Alice', 'Bob'],
+  })
+  await expect(page.getByRole('button', { name: 'Share' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Group actions' }).click()
+  await page.getByRole('menuitem', { name: 'Share' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Share' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('textbox')).toHaveValue(
+    new RegExp(`/groups/${groupId}/expenses\?ref=share$`),
+  )
+})

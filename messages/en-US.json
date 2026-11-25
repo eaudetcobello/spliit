@@ -490,6 +490,7 @@
   },
   "Share": {
     "title": "Share",
+    "groupActions": "Group actions",
     "description": "For other participants to see the group and add expenses, share its URL with them.",
     "copyLink": "Copy link",
     "shareLink": "Share link",
