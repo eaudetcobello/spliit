@@ -10,8 +10,9 @@
  *
  * - `deep-page`  offset pagination (`nextCursor = cursor + limit`) against an
  *   `orderBy` that has no matching index.
- * - `search`     `title: { contains, mode: 'insensitive' }`, i.e. an unindexed
- *   scan of the group's expenses.
+ * - `search`     a case-insensitive match in JS over every title and note of
+ *   the group (findExpenseIdsMatching in src/lib/api.ts), then the page query
+ *   on the matching ids.
  * - `balances`   `getGroupExpenses(groupId)` with no `take` at all -- the whole
  *   group is loaded to compute balances in JS.
  */

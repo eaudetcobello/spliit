@@ -161,10 +161,11 @@ Create `./data` yourself (`mkdir data`) before the first start. If Docker
 creates it, it belongs to root, and the app running as uid 1000 cannot create
 the database in it.
 
-Back up the database by copying `./data/spliit.db` while the app is stopped, or
-with `sqlite3 ./data/spliit.db ".backup backup.db"` while it runs. Copying the
-file alone while the app runs can miss recent writes, which sit in
-`spliit.db-wal` until SQLite folds them in.
+Back up the database with `sqlite3 ./data/spliit.db ".backup backup.db"`,
+which is safe while the app runs. To copy files instead, stop the app and copy
+`spliit.db` together with `spliit.db-wal` and `spliit.db-shm` if they exist:
+recent writes sit in `spliit.db-wal` until SQLite folds them in, and the app
+does not fold them in on shutdown, so `spliit.db` alone can miss them.
 
 You can use named volumes in place of bind mounts if you prefer not having
 data stored inside local directories.
