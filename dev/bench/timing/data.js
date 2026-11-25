@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795579228357,
+  "lastUpdate": 1795580456251,
   "repoUrl": "https://github.com/eaudetcobello/spliit",
   "entries": {
     "Spliit performance (timing)": [
@@ -587,6 +587,90 @@ window.BENCHMARK_DATA = {
           {
             "name": "view-expense:edit-form p95",
             "value": 5.5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155978570+eaudetcobello@users.noreply.github.com",
+            "name": "eaudetcobello",
+            "username": "eaudetcobello"
+          },
+          "committer": {
+            "email": "155978570+eaudetcobello@users.noreply.github.com",
+            "name": "eaudetcobello",
+            "username": "eaudetcobello"
+          },
+          "distinct": true,
+          "id": "9710a0ae441b2237401a6c139fad37ecbf4e2376",
+          "message": "Fix the backup advice for WAL mode and two stale comments\n\nThe app never checkpoints on shutdown, so spliit.db alone can miss writes\nthat are still in spliit.db-wal even with the app stopped. The README now\nsays to use `sqlite3 .backup` or to copy the -wal and -shm files as well.\n\nAlso correct build.env, which said the build never opens the database\n(enabling WAL creates it), and the perf search scenario, which still\ndescribed Postgres' insensitive contains.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-24T23:18:38-05:00",
+          "tree_id": "36332fb9083172bd56d1853c687cd65a9745ff23",
+          "url": "https://github.com/eaudetcobello/spliit/commit/9710a0ae441b2237401a6c139fad37ecbf4e2376"
+        },
+        "date": 1795580455812,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "list-groups:home p50",
+            "value": 134.38,
+            "unit": "ms"
+          },
+          {
+            "name": "list-groups:home p95",
+            "value": 161.27,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:first-page p50",
+            "value": 7.87,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:first-page p95",
+            "value": 10.74,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:deep-page p50",
+            "value": 6.02,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:deep-page p95",
+            "value": 9.68,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:search p50",
+            "value": 7.91,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:search p95",
+            "value": 10.23,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:balances p50",
+            "value": 100.24,
+            "unit": "ms"
+          },
+          {
+            "name": "view-group:balances p95",
+            "value": 129.6,
+            "unit": "ms"
+          },
+          {
+            "name": "view-expense:edit-form p50",
+            "value": 3.57,
+            "unit": "ms"
+          },
+          {
+            "name": "view-expense:edit-form p95",
+            "value": 4.6,
             "unit": "ms"
           }
         ]
