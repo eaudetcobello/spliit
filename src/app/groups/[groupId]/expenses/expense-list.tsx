@@ -4,7 +4,7 @@ import { ExpenseCard } from '@/app/groups/[groupId]/expenses/expense-card'
 import { Button } from '@/components/ui/button'
 import { SearchBar } from '@/components/ui/search-bar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { saveActiveUser } from '@/lib/active-user'
+import { readActiveUser, saveActiveUser } from '@/lib/active-user'
 import {
   EXPENSE_GROUPS,
   getGroupedExpensesByDate,
@@ -37,6 +37,10 @@ export function ExpenseList() {
     if (activeUser || newUser) {
       localStorage.removeItem('newGroup-activeUser')
       localStorage.removeItem(`${groupId}-newUser`)
+      // The create form's choice only reaches this list on its first render.
+      // If the user left before that (straight to "Add expense", say) and
+      // picked someone since, that later choice wins.
+      if (readActiveUser(groupId) !== null) return
       if (activeUser === 'None') {
         saveActiveUser(groupId, 'None')
       } else {
@@ -148,7 +152,7 @@ const ExpenseListForSearch = ({
                 expense={expense}
                 currency={getCurrencyFromGroup(group)}
                 groupId={groupId}
-                participantCount={group.participants.length}
+                participants={group.participants}
               />
             ))}
           </div>

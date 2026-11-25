@@ -162,6 +162,22 @@ export function formatFileSize(size: number, locale: string) {
   return `${formatNumber(size)} B`
 }
 
+/**
+ * Orders an expense's paid-for rows like the group's participant list, which
+ * is the order the expense form shows them in. The database guarantees no order
+ * for these rows: SQLite returns them by primary key, i.e. by random participant
+ * id. Rows for someone not in `participants` go last, in their given order.
+ */
+export function sortByParticipantOrder<
+  T extends { participant: { id: string } },
+>(rows: readonly T[], participants: readonly { id: string }[]): T[] {
+  const position = new Map(participants.map(({ id }, index) => [id, index]))
+  const rank = (row: T) =>
+    position.get(row.participant.id) ?? participants.length
+  // Array.prototype.sort is stable, so ties keep their given order.
+  return [...rows].sort((a, b) => rank(a) - rank(b))
+}
+
 export function normalizeString(input: string): string {
   // Replaces special characters
   // Input: áäåèéę

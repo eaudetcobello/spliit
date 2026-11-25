@@ -87,5 +87,5 @@ test('deletes an expense and clears the balances', async ({ page }) => {
   await expectBalance(page, 'Alice', 0)
   await expectBalance(page, 'Bob', 0)
   await expectBalance(page, 'Carol', 0)
-  await expect(page.getByText(/doesn.t need any reimbursement/)).toBeVisible()
+  await expect(page.getByText('Everyone is settled up.')).toBeVisible()
 })

@@ -277,7 +277,8 @@ test('shares the group from the header "Group actions" menu', async ({
   const dialog = page.getByRole('dialog', { name: 'Share' })
   await expect(dialog).toBeVisible()
   await expect(dialog.getByRole('textbox')).toHaveValue(
-    new RegExp(`/groups/${groupId}/expenses\?ref=share$`),
+    // `\\?` so the regex gets `\?`: in a template literal `\?` is just `?`.
+    new RegExp(`/groups/${groupId}/expenses\\?ref=share$`),
   )
 })
 

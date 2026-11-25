@@ -1,5 +1,35 @@
 import { Currency } from './currency'
-import { dateOnlyToLocalDate, formatCurrency, formatDateOnly } from './utils'
+import {
+  dateOnlyToLocalDate,
+  formatCurrency,
+  formatDateOnly,
+  sortByParticipantOrder,
+} from './utils'
+
+describe('sortByParticipantOrder', () => {
+  const row = (id: string) => ({ participant: { id }, shares: 1 })
+  const participants = [{ id: 'zed' }, { id: 'amy' }, { id: 'kim' }]
+
+  it("follows the group's participant order, not the ids'", () => {
+    const sorted = sortByParticipantOrder(
+      [row('kim'), row('amy'), row('zed')],
+      participants,
+    )
+    expect(sorted.map((r) => r.participant.id)).toEqual(['zed', 'amy', 'kim'])
+  })
+
+  it('puts unknown participants last, keeping their order, without mutating', () => {
+    const rows = [row('ghost2'), row('kim'), row('ghost1'), row('zed')]
+    const sorted = sortByParticipantOrder(rows, participants)
+    expect(sorted.map((r) => r.participant.id)).toEqual([
+      'zed',
+      'kim',
+      'ghost2',
+      'ghost1',
+    ])
+    expect(rows[0]!.participant.id).toBe('ghost2')
+  })
+})
 
 describe('formatCurrency', () => {
   const currency: Currency = {
