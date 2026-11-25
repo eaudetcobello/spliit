@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1795579226903,
+  "lastUpdate": 1795580454414,
   "repoUrl": "https://github.com/eaudetcobello/spliit",
   "entries": {
     "Spliit performance (deterministic)": [
@@ -611,6 +611,90 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/eaudetcobello/spliit/commit/c7e72215cb799f4a00f672f75f4560d88e75d188"
         },
         "date": 1795579226554,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "list-groups:home bytes",
+            "value": 7064,
+            "unit": "bytes"
+          },
+          {
+            "name": "list-groups:home queries",
+            "value": 61,
+            "unit": "queries"
+          },
+          {
+            "name": "view-group:first-page bytes",
+            "value": 25258,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-group:first-page queries",
+            "value": 3,
+            "unit": "queries"
+          },
+          {
+            "name": "view-group:deep-page bytes",
+            "value": 24564,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-group:deep-page queries",
+            "value": 2,
+            "unit": "queries"
+          },
+          {
+            "name": "view-group:search bytes",
+            "value": 23714,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-group:search queries",
+            "value": 3,
+            "unit": "queries"
+          },
+          {
+            "name": "view-group:balances bytes",
+            "value": 2370,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-group:balances queries",
+            "value": 2,
+            "unit": "queries"
+          },
+          {
+            "name": "view-expense:edit-form bytes",
+            "value": 5657,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-expense:edit-form queries",
+            "value": 3,
+            "unit": "queries"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155978570+eaudetcobello@users.noreply.github.com",
+            "name": "eaudetcobello",
+            "username": "eaudetcobello"
+          },
+          "committer": {
+            "email": "155978570+eaudetcobello@users.noreply.github.com",
+            "name": "eaudetcobello",
+            "username": "eaudetcobello"
+          },
+          "distinct": true,
+          "id": "9710a0ae441b2237401a6c139fad37ecbf4e2376",
+          "message": "Fix the backup advice for WAL mode and two stale comments\n\nThe app never checkpoints on shutdown, so spliit.db alone can miss writes\nthat are still in spliit.db-wal even with the app stopped. The README now\nsays to use `sqlite3 .backup` or to copy the -wal and -shm files as well.\n\nAlso correct build.env, which said the build never opens the database\n(enabling WAL creates it), and the perf search scenario, which still\ndescribed Postgres' insensitive contains.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-24T23:18:38-05:00",
+          "tree_id": "36332fb9083172bd56d1853c687cd65a9745ff23",
+          "url": "https://github.com/eaudetcobello/spliit/commit/9710a0ae441b2237401a6c139fad37ecbf4e2376"
+        },
+        "date": 1795580453811,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
