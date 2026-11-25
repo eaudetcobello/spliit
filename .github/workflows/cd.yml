@@ -125,3 +125,31 @@ jobs:
       - name: Inspect image
         run: |
           docker buildx imagetools inspect "${REGISTRY}/${REPO}:${{ github.ref_name }}"
+
+  # A GitHub release for the tag, created only once its image is published, so
+  # a release never points at an image that does not exist.
+  release:
+    runs-on: ubuntu-latest
+    needs: [merge]
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ github.ref_name }}
+
+    steps:
+      - name: Create release
+        run: |
+          # A re-run of this workflow must not fail on the release made the
+          # first time.
+          if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" > /dev/null 2>&1; then
+            echo "Release ${TAG} already exists"
+            exit 0
+          fi
+          image="${REGISTRY}/${GITHUB_REPOSITORY@L}:${TAG}"
+          gh release create "${TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${TAG}" \
+            --verify-tag \
+            --generate-notes \
+            --notes "Image: \`${image}\` (linux/amd64, linux/arm64)"

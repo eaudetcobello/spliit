@@ -23,6 +23,11 @@ RUN apk add --no-cache openssl && \
     done; \
     exit 1
 
+# --ignore-scripts also skipped better-sqlite3's own install step, which
+# fetches its native binary. The standalone output copies this package as is,
+# so without the binary the server cannot open the database.
+RUN npm rebuild better-sqlite3
+
 COPY ./src ./src
 COPY ./messages ./messages
 
@@ -81,6 +86,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
+# The SQLite database lives on a volume, so it outlives the container. Mount a
+# host directory or a named volume at /data to keep it across upgrades.
+ENV DATABASE_URL=file:/data/spliit.db
+# Owned by `node` (uid 1000), so the README's `user: "1000:1000"` can write to a
+# named volume, which starts with the image directory's ownership.
+RUN mkdir -p /data && chown node:node /data
+VOLUME ["/data"]
+
 RUN apk add --no-cache openssl
 
 # The traced server, plus the two things tracing cannot know about: the static
@@ -89,7 +102,7 @@ COPY --from=base /usr/app/.next/standalone ./
 COPY --from=base /usr/app/.next/static ./.next/static
 COPY ./public ./public
 
-# prisma.config.ts carries the connection URLs that used to live in
+# prisma.config.ts carries the database URL that used to live in
 # schema.prisma; `prisma migrate deploy` reads it at container start.
 COPY --from=base /usr/app/prisma ./prisma
 COPY --from=base /usr/app/prisma.config.ts ./

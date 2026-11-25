@@ -3,19 +3,32 @@ import {
   PERF_INSTRUMENTATION_ENABLED,
   recordQuery,
 } from '@/lib/perf-instrumentation'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
 
 // Prisma 7 ships a Rust-free client and requires an explicit driver adapter.
-// We use the `pg` adapter with the pooled connection string.
+// We use the better-sqlite3 adapter on the file named by DATABASE_URL.
 function createPrismaClient() {
-  const adapter = new PrismaPg({
-    connectionString: process.env['POSTGRES_PRISMA_URL'],
-  })
+  // Checked here as well as in env.ts, because not every path that imports
+  // prisma imports env. better-sqlite3 opens an empty path as a temporary
+  // database deleted on close, so a missing URL would lose writes silently.
+  const url = process.env['DATABASE_URL']?.trim()
+  if (!url) {
+    throw new Error('DATABASE_URL is not set, e.g. file:./data/spliit.db')
+  }
+  const adapter = new PrismaBetterSqlite3({ url })
   const client = new PrismaClient({
     adapter,
     // log: [{ emit: 'stdout', level: 'query' }],
+  })
+
+  // WAL lets reads proceed while a write is in progress, and makes a crash
+  // mid-write cheaper to recover from. The mode is stored in the database file,
+  // so this only changes anything on the first start. It cannot run inside a
+  // migration, which is a transaction.
+  client.$queryRawUnsafe('PRAGMA journal_mode = WAL').catch((error) => {
+    console.error('Could not enable SQLite WAL mode', error)
   })
 
   if (!PERF_INSTRUMENTATION_ENABLED) return client

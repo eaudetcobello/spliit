@@ -15,11 +15,8 @@ export default defineConfig({
     path: path.join('prisma', 'migrations'),
   },
   datasource: {
-    // Migrate / introspection use a direct (non-pooled) connection. Fall back to
-    // the pooled URL when a dedicated direct URL is not configured.
-    url:
-      process.env.POSTGRES_URL_NON_POOLING ??
-      process.env.POSTGRES_PRISMA_URL ??
-      '',
+    // The SQLite file, e.g. `file:./data/spliit.db`. A relative path resolves
+    // against the working directory, the same as for the app.
+    url: process.env.DATABASE_URL ?? '',
   },
 })

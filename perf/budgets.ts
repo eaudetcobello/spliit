@@ -99,7 +99,9 @@ export const budgets: Record<string, Budget> = {
     bytes: config.pageSize * 1_340,
     // A full page, unless the dataset is small enough that fewer expenses match.
     rows: Math.min(config.pageSize, searchMatchCount),
-    dbQueries: EXPENSE_READ_QUERIES,
+    // One more than a plain page: the case-insensitive match runs in JS over
+    // the group's titles and notes first (findExpenseIdsMatching in api.ts).
+    dbQueries: EXPENSE_READ_QUERIES + 1,
   },
 
   /**

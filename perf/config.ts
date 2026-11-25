@@ -55,13 +55,12 @@ export const baseUrl =
   `http://localhost:${process.env['PERF_HOST_PORT'] ?? '3100'}`
 
 /**
- * Connection string for the seeder. This is deliberately NOT the app's
- * POSTGRES_PRISMA_URL: the app reaches postgres as `db:5432` inside the compose
- * network, while the seeder runs on the host and reaches the published port.
+ * The SQLite file the seeder writes, on the host. compose.perf.yaml bind-mounts
+ * its directory into the app container as /data, so this is the same file the
+ * app reads -- under a host path rather than the app's DATABASE_URL.
  */
-export const seedDatabaseUrl =
-  process.env['PERF_DATABASE_URL'] ??
-  `postgresql://postgres:perf@localhost:${process.env['PERF_DB_PORT'] ?? '55432'}/spliit_perf`
+export const seedDatabasePath =
+  process.env['PERF_DATABASE_PATH'] ?? 'perf-data/spliit.db'
 
 export const groupId = (index: number) =>
   `perf-group-${String(index).padStart(2, '0')}`

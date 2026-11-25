@@ -316,3 +316,43 @@ describe('updateExpense', () => {
     })
   })
 })
+
+describe('getGroupExpenses search', () => {
+  beforeEach(() => {
+    jest.mocked(prisma.recurringExpenseLink.findMany).mockResolvedValue([])
+    jest.mocked(prisma.expense.findMany).mockReset()
+  })
+
+  it('matches title or notes ignoring case, including non-ASCII letters', async () => {
+    jest
+      .mocked(prisma.expense.findMany)
+      .mockResolvedValueOnce([
+        { id: 'e1', title: 'Café crème', notes: null },
+        { id: 'e2', title: 'Train', notes: 'Paid at the CAFÉ' },
+        { id: 'e3', title: 'Cafeteria', notes: null },
+        { id: 'e4', title: 'Groceries', notes: 'nothing here' },
+      ] as never)
+      .mockResolvedValueOnce([] as never)
+
+    await getGroupExpenses('group-1', { filter: 'CAFÉ', offset: 0, length: 20 })
+
+    const pageQuery = jest.mocked(prisma.expense.findMany).mock.calls[1]![0]!
+    expect(pageQuery.where).toEqual({
+      groupId: 'group-1',
+      id: { in: ['e1', 'e2'] },
+    })
+    expect(pageQuery.skip).toBe(0)
+    expect(pageQuery.take).toBe(20)
+  })
+
+  it('does not run the matching query without a filter', async () => {
+    jest.mocked(prisma.expense.findMany).mockResolvedValueOnce([] as never)
+
+    await getGroupExpenses('group-1')
+
+    expect(prisma.expense.findMany).toHaveBeenCalledTimes(1)
+    expect(
+      jest.mocked(prisma.expense.findMany).mock.calls[0]![0]!.where,
+    ).toEqual({ groupId: 'group-1', id: undefined })
+  })
+})

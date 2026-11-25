@@ -56,16 +56,18 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      # The seeder runs on the host and talks to postgres directly, so it needs
-      # a generated client.
+      # The database is migrated and seeded on the host, which needs two things
+      # --ignore-scripts skipped: better-sqlite3's native binary (the seeder) and
+      # the schema engine @prisma/engines downloads (`prisma migrate deploy`).
+      - name: Fetch native modules for migrating and seeding
+        run: npm rebuild better-sqlite3 @prisma/engines
+
       - name: Generate Prisma client
         run: npx prisma generate
 
-      - name: Start the app stack
+      # Migrates and seeds ./perf-data, then starts the app on it.
+      - name: Seed the dataset and start the app stack
         run: ./scripts/perf.sh up
-
-      - name: Seed the performance dataset
-        run: ./scripts/perf.sh seed
 
       - name: Run benchmarks
         run: npx tsx perf/run.ts

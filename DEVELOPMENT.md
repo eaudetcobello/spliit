@@ -6,19 +6,19 @@ Upstream: https://github.com/spliit-app/spliit
 
 ## Start
 
-Start Docker Desktop, open a terminal in this directory, then run:
+Open a terminal in this directory, then run:
 
 ```powershell
 npm run dev:local
 ```
 
 Open http://localhost:3000. Changes in `src` reload automatically.
-Stop the web server with Ctrl+C. The database keeps its data in a Docker named volume.
-`npm run db:down` stops the database without deleting that volume.
+Stop the web server with Ctrl+C. The database is the SQLite file `data/spliit.db`
+(`DATABASE_URL` in `.env`); delete the `data` folder to start over.
+Docker is only needed for the e2e and perf suites.
 
 ## Useful commands
 
-- `npm run db:up`: start PostgreSQL and wait for readiness.
 - `npm run db:deploy`: apply existing migrations and generate Prisma Client.
 - `npm run db:migrate -- --name your_change`: create and apply a local schema migration.
 - `npm run db:studio`: inspect the local database in Prisma Studio.
@@ -31,7 +31,7 @@ create a local group to try expense splitting. Your imported financial history r
 Connection settings are in the Git-ignored `.env`; do not commit that file.
 
 Node 24+ and npm 11+ are required. The installed Node and npm versions satisfy these requirements.
-After pulling changes, run `npm ci` with the database running, then `npm run dev:local`.
+After pulling changes, run `npm ci`, then `npm run dev:local`.
 
 ## Git workflow
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Runs the Playwright suite against an isolated app + postgres stack built from
+# Runs the Playwright suite against an isolated app stack built from
 # this checkout. CI calls the same subcommands, so local and CI runs are identical.
 #
 #   ./scripts/e2e.sh                  build, start, test, tear down
@@ -23,7 +23,7 @@ compose() { docker compose -f compose.e2e.yaml "$@"; }
 
 up() {
   # --force-recreate --renew-anon-volumes is what actually guarantees a clean
-  # database: the postgres image declares its own VOLUME, so a plain `up` would
+  # database: the image declares `VOLUME /data`, so a plain `up` would
   # silently reattach the previous run's anonymous volume.
   #
   # Spelled out twice rather than built as an array: macOS still ships bash 3.2,

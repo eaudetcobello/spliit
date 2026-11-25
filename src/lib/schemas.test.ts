@@ -60,3 +60,21 @@ describe('expenseFormSchema, split by amount', () => {
     ])
   })
 })
+
+describe('expenseFormSchema, expense date', () => {
+  it('keeps only the UTC calendar day, as the old DATE column did', () => {
+    const result = expenseFormSchema.parse({
+      ...byAmountExpense('10', ['10']),
+      expenseDate: new Date('2026-09-01T23:30:15.250Z'),
+    })
+    expect(result.expenseDate.toISOString()).toBe('2026-09-01T00:00:00.000Z')
+  })
+
+  it('reads a date-only string as that day', () => {
+    const result = expenseFormSchema.parse({
+      ...byAmountExpense('10', ['10']),
+      expenseDate: '2026-02-28',
+    })
+    expect(result.expenseDate.toISOString()).toBe('2026-02-28T00:00:00.000Z')
+  })
+})

@@ -52,7 +52,20 @@ const inputCoercedToNumber = z.union([
 
 export const expenseFormSchema = z
   .object({
-    expenseDate: z.coerce.date(),
+    // A calendar day carried as UTC midnight. Truncated here because SQLite
+    // stores the full timestamp it is given, where Postgres' DATE dropped it.
+    expenseDate: z.coerce
+      .date()
+      .transform(
+        (date) =>
+          new Date(
+            Date.UTC(
+              date.getUTCFullYear(),
+              date.getUTCMonth(),
+              date.getUTCDate(),
+            ),
+          ),
+      ),
     title: z
       .string({
         error: (issue) =>

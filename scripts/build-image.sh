@@ -12,7 +12,6 @@ read_pkg_field() {
 SPLIIT_APP_NAME=$(read_pkg_field name)
 SPLIIT_VERSION=$(read_pkg_field version)
 
-# we need to set dummy data for POSTGRES env vars in order for build not to fail
 docker buildx build \
     -t ${SPLIIT_APP_NAME}:${SPLIIT_VERSION} \
     -t ${SPLIIT_APP_NAME}:latest \

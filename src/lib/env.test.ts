@@ -6,8 +6,7 @@ function loadEnv(vars: Record<string, string>) {
   const original = process.env
   process.env = {
     ...original,
-    POSTGRES_URL_NON_POOLING: 'postgresql://localhost/spliit',
-    POSTGRES_PRISMA_URL: 'postgresql://localhost/spliit',
+    DATABASE_URL: 'file:./data/test.db',
     ANALYTICS_PROVIDER: '',
     ...vars,
   }

@@ -29,7 +29,8 @@ function escapeCsvFormula(value: string): string {
 }
 
 /**
- * `expenseDate` is a DATE column carried at UTC midnight, so it is converted
+ * `expenseDate` is a calendar day carried at UTC midnight (truncated on write by
+ * expenseFormSchema in src/lib/schemas.ts), so it is converted
  * with `dateOnlyToLocalDate` first: reading it through local getters directly
  * would export the previous day on a server west of UTC.
  */

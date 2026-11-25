@@ -1,8 +1,8 @@
 [<img alt="Spliit" height="60" src="https://github.com/spliit-app/spliit/blob/main/public/logo-with-text.png?raw=true" />](https://spliit.app)
 
-Spliit is a free and open source alternative to Splitwise. You can either use the official instance at [Spliit.app](https://spliit.app), or deploy your own instance:
+Spliit is a free and open source alternative to Splitwise. You can either use the official instance at [Spliit.app](https://spliit.app), or deploy your own instance (see [Run with Docker compose](#run-with-docker-compose)).
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fspliit-app%2Fspliit&project-name=my-spliit-instance&repository-name=my-spliit-instance&stores=%5B%7B%22type%22%3A%22postgres%22%7D%5D&)
+Spliit stores its data in a SQLite file, so it needs a server with a persistent disk. Serverless hosts such as Vercel, which wipe the filesystem between requests, cannot run it.
 
 ## Features
 
@@ -63,10 +63,9 @@ Here is the current state of translation:
 ## Run locally
 
 1. Clone the repository (or fork it if you intend to contribute)
-2. Start a PostgreSQL server. You can run `./scripts/start-local-db.sh` if you don’t have a server already.
-3. Copy the file `.env.example` as `.env`
-4. Run `npm install` to install dependencies. This will also apply database migrations and update Prisma Client.
-5. Run `npm run dev` to start the development server
+2. Copy the file `.env.example` as `.env`. The database is the SQLite file it names, `./data/spliit.db`, created on first run.
+3. Run `npm install` to install dependencies. This will also apply database migrations and update Prisma Client.
+4. Run `npm run dev` to start the development server
 
 ## End-to-end tests
 
@@ -79,9 +78,9 @@ throws its database away afterwards.
 npm run e2e
 ```
 
-That builds the image, starts app + PostgreSQL from `compose.e2e.yaml`, waits
-for `/api/health/readiness`, runs the suite and tears everything down. It never
-touches your development stack or `./postgres-data`.
+That builds the image, starts the app from `compose.e2e.yaml` on an empty
+database, waits for `/api/health/readiness`, runs the suite and tears everything
+down. It never touches your development database in `./data`.
 
 While writing tests it is quicker to keep the stack up:
 
@@ -113,7 +112,7 @@ triggered manually and runs automatically on release tags.
 
 1. Run `npm run build-image` to build the docker image from the Dockerfile
 2. Copy the file `container.env.example` as `container.env`
-3. Run `npm run start-container` to start the postgres and the spliit2 containers
+3. Run `npm run start-container` to start the spliit2 container. The database is kept in `./data`.
 4. You can access the app by browsing to http://localhost:3000
 
 ## Run with Docker compose
@@ -129,33 +128,22 @@ services:
     user: "1000:1000" # change to your user id or remove if you want root
     ports:
       - "8080:3000/tcp"
-    environment:
-      POSTGRES_PRISMA_URL: postgresql://spliit:spliit@database:5432/spliit
-      POSTGRES_URL_NON_POOLING: postgresql://spliit:spliit@database:5432/spliit
     volumes:
+      # The SQLite database. The image sets DATABASE_URL=file:/data/spliit.db.
+      - ./data:/data
       - ./app/cache:/usr/app/.next/cache
-    depends_on:
-      - database
-    networks:
-      - spliit
-
-  database:
-    image: postgres:17.3
-    user: "1000:1000" # same as above
-    environment:
-      POSTGRES_USER: spliit
-      POSTGRES_PASSWORD: spliit
-      POSTGRES_DB: spliit
-    volumes:
-      - ./database/data:/var/lib/postgresql/data
-    networks:
-      - spliit
-
-networks:
-  spliit:
 ```
 
 The web app will then be available on your host at http://localhost:8080/.
+
+Create `./data` yourself (`mkdir data`) before the first start. If Docker
+creates it, it belongs to root, and the app running as uid 1000 cannot create
+the database in it.
+
+Back up the database by copying `./data/spliit.db` while the app is stopped, or
+with `sqlite3 ./data/spliit.db ".backup backup.db"` while it runs. Copying the
+file alone while the app runs can miss recent writes, which sit in
+`spliit.db-wal` until SQLite folds them in.
 
 You can use named volumes in place of bind mounts if you prefer not having
 data stored inside local directories.

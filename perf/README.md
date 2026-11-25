@@ -1,7 +1,7 @@
 # Performance suite
 
 Benchmarks the three most-used flows in the app over HTTP, against a real
-Postgres with a realistic amount of data in it.
+SQLite database with a realistic amount of data in it.
 
 The point is to make performance work measurable: to tell whether a change to a
 query, an index, or a procedure actually helped, and to catch it when something
@@ -13,14 +13,14 @@ gets quietly worse.
 npm run perf
 ```
 
-That builds an image from the checkout, starts it with a throwaway Postgres,
-seeds the dataset, benchmarks, prints a report, and tears everything down.
+That builds an image from the checkout, seeds a throwaway SQLite database
+(`./perf-data`), starts the app on it, benchmarks, prints a report, and tears everything down.
 
 While iterating, keep the stack up between runs:
 
 ```sh
-npm run perf:up      # build and start
-npm run perf:seed    # (re)seed
+npm run perf:up      # seed, build and start
+npm run perf:seed    # restart on a freshly seeded database
 npm run perf:bench   # benchmark; repeat as often as you like
 npm run perf:bench -- --filter view-group
 npm run perf:down
@@ -114,8 +114,8 @@ below.
 
 ## Caveats
 
-The benchmark Postgres runs with `fsync=off`, `synchronous_commit=off` and
-`full_page_writes=off`, and CI runners vary. **These timings are for comparing
+The benchmark database is a SQLite file on a Docker bind mount, whose I/O
+differs from a real server disk, and CI runners vary. **These timings are for comparing
 runs against each other, not for estimating production capacity.** The timing
 series is meaningful as a trend across many releases; two adjacent points are
 not meaningfully comparable.

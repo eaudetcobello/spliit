@@ -413,6 +413,10 @@ export async function getGroupExpenses(
 ) {
   await createRecurringExpenses()
 
+  const matchingIds = options?.filter
+    ? await findExpenseIdsMatching(groupId, options.filter)
+    : undefined
+
   return prisma.expense.findMany({
     select: {
       amount: true,
@@ -437,18 +441,36 @@ export async function getGroupExpenses(
     },
     where: {
       groupId,
-      // Search matches the title or the notes (#601).
-      OR: options?.filter
-        ? [
-            { title: { contains: options.filter, mode: 'insensitive' } },
-            { notes: { contains: options.filter, mode: 'insensitive' } },
-          ]
-        : undefined,
+      id: matchingIds ? { in: matchingIds } : undefined,
     },
     orderBy: [{ expenseDate: 'desc' }, { createdAt: 'desc' }],
     skip: options && options.offset,
     take: options && options.length,
   })
+}
+
+/**
+ * Ids of the group's expenses whose title or notes contain `filter`, ignoring
+ * case (#601).
+ *
+ * Done in JS rather than in the query: SQLite's LIKE and lower() only fold
+ * ASCII letters, so "CAFÉ" would not find "Café", and Prisma's
+ * `mode: 'insensitive'` is Postgres-only. Only the id, title and notes of the
+ * group are read, so this stays cheap even for a large group.
+ */
+export async function findExpenseIdsMatching(groupId: string, filter: string) {
+  const needle = filter.toLowerCase()
+  const candidates = await prisma.expense.findMany({
+    where: { groupId },
+    select: { id: true, title: true, notes: true },
+  })
+  return candidates
+    .filter(
+      ({ title, notes }) =>
+        title.toLowerCase().includes(needle) ||
+        (notes?.toLowerCase().includes(needle) ?? false),
+    )
+    .map(({ id }) => id)
 }
 
 export async function getGroupExpenseCount(groupId: string) {
