@@ -49,7 +49,6 @@ test('asks who you are and personalises the expense list', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Save changes' }).click()
   await expect(dialog).toBeHidden()
 
-  await expect(page.getByRole('button', { name: 'I am Bob' })).toBeVisible()
   await expect(expenseCard(page, 'Dinner')).toContainText('Your balance:')
   await expect(expenseCard(page, 'Dinner')).toContainText(money(-30))
 
@@ -58,7 +57,6 @@ test('asks who you are and personalises the expense list', async ({ page }) => {
 
   // The dialog does not come back...
   await expect(page.getByRole('dialog')).toBeHidden()
-  await expect(page.getByRole('button', { name: 'I am Bob' })).toBeVisible()
   // ...and Bob now sees his own third of Alice's 90 on the card.
   await expect(expenseCard(page, 'Dinner')).toContainText('Your balance:')
   await expect(expenseCard(page, 'Dinner')).toContainText(money(-30))
@@ -112,4 +110,18 @@ test('lets you decline to pick anyone', async ({ page }) => {
   // ...and the dialog does not come back.
   await page.reload()
   await expect(page.getByRole('dialog')).toBeHidden()
+})
+
+test('has no "Who are you?" picker in the group header', async ({ page }) => {
+  const groupId = await createGroup(page, {
+    name: `E2E ActiveUserHeader ${uniqueSuffix()}`,
+    participants: ['Alice', 'Bob'],
+  })
+  await page.goto(`/groups/${groupId}/expenses`)
+  await expect(
+    page.getByRole('heading', { name: 'Balances', exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: /^(I am |Who are you?)/ }),
+  ).toHaveCount(0)
 })

@@ -33,7 +33,6 @@
     "exportCsv": "Export to CSV",
     "searchPlaceholder": "Search for an expense…",
     "ActiveUserModal": {
-      "current": "I am {name}",
       "title": "Who are you?",
       "description": "Tell us which participant you are to let us customize how the information is displayed.",
       "nobody": "I don’t want to select anyone",

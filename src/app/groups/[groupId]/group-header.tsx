@@ -23,12 +23,14 @@ export const GroupHeader = () => {
           </Link>
         </h1>
         {group && (
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <>
+            {/* Asks who you are on a first visit. Change it later in
+                Settings. */}
             <ActiveUserModal groupId={groupId} />
-            {/* On mobile, sharing sits with the other header actions; on
-                desktop it moves to the end of the section nav. */}
+            {/* On mobile, sharing sits in the header; on desktop it moves to
+                the end of the section nav. */}
             <ShareButton group={group} className="md:hidden" />
-          </div>
+          </>
         )}
       </div>
 

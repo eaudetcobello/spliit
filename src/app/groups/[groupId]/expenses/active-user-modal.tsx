@@ -8,7 +8,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Drawer,
@@ -16,7 +15,6 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
-  DrawerTrigger,
 } from '@/components/ui/drawer'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -25,7 +23,6 @@ import { useActiveUser, useMediaQuery } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import { AppRouterOutput } from '@/trpc/routers/_app'
-import { UserRound } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { ComponentProps, useEffect, useState } from 'react'
 
@@ -37,13 +34,6 @@ export function ActiveUserModal({ groupId }: { groupId: string }) {
 
   const group = groupData?.group
   const activeUser = useActiveUser(groupId)
-  const participant = group?.participants.find((p) => p.id === activeUser)
-  const trigger = (
-    <Button type="button" variant="outline" size="sm" className="gap-2">
-      <UserRound className="h-4 w-4" />
-      {participant ? t('current', { name: participant.name }) : t('title')}
-    </Button>
-  )
 
   useEffect(() => {
     if (!group) return
@@ -69,7 +59,6 @@ export function ActiveUserModal({ groupId }: { groupId: string }) {
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={updateOpen}>
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{t('title')}</DialogTitle>
@@ -92,7 +81,6 @@ export function ActiveUserModal({ groupId }: { groupId: string }) {
 
   return (
     <Drawer open={open} onOpenChange={updateOpen}>
-      <DrawerTrigger asChild>{trigger}</DrawerTrigger>
       <DrawerContent>
         <DrawerHeader className="text-left">
           <DrawerTitle>{t('title')}</DrawerTitle>
