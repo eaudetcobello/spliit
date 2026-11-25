@@ -2,7 +2,28 @@
 
 Spliit is a free and open source alternative to Splitwise. You can either use the official instance at [Spliit.app](https://spliit.app), or deploy your own instance (see [Run with Docker compose](#run-with-docker-compose)).
 
-Spliit stores its data in a SQLite file, so it needs a server with a persistent disk. Serverless hosts such as Vercel, which wipe the filesystem between requests, cannot run it.
+## About this fork
+
+This is a personal fork of [spliit-app/spliit](https://github.com/spliit-app/spliit), run on a single homelab server. It differs from upstream in two ways.
+
+### SQLite instead of Postgres
+
+- The database is a single SQLite file (`DATABASE_URL=file:...`, `/data/spliit.db` in the image) accessed through Prisma's better-sqlite3 adapter. There is no database server to run.
+- Because the data is a file, the app needs a persistent disk. Serverless hosts such as Vercel, which wipe the filesystem between requests, cannot run it.
+- One SQLite migration replaces upstream's Postgres history, so upstream migrations do not apply as is. [`scripts/import-postgres-json.mjs`](scripts/import-postgres-json.mjs) imports an existing Postgres instance.
+- Search ignores case for accented letters too ("CAFÉ" finds "Café"), and expense dates are stored as a calendar day.
+
+### UI quality of life
+
+- **Expenses is the main page.** Balances sit at the top of it as "Alice owes you $10.37" / "You owe Alice $27.04" lines, each with a **Settle up** button that opens a minimal "Record a payment" page. Everyone's net balance is in a collapsible list. The separate Balances and Information tabs are gone.
+- **Simple expense mode**, like Splitwise: a title, an amount, and "How was this expense split?" ("You paid, split equally", "You are owed the full amount", …). New expenses start in Simple mode. Advanced mode keeps every field, and switching modes keeps the split.
+- **A floating "Add expense" button**, and a bottom tab bar on mobile.
+- **Branding removed.** The app is just called "Expenses": there is no Spliit logo, landing page (`/` goes straight to your groups), footer, or logo in the share QR code.
+- **Less clutter.** Share, Export, Create and "Add by URL" move into three-dot menus. There is no language switcher or "I am …" header picker. You still choose who you are on first visit, and can change it in the group's Settings.
+
+### Releases
+
+Tags such as `1.30.0-sqlite.2` publish `ghcr.io/eaudetcobello/spliit:<tag>` and `:latest` (amd64 and arm64), and create a GitHub release.
 
 ## Features
 
