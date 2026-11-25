@@ -189,13 +189,6 @@
       "simple": "Simple",
       "advanced": "Advanced"
     },
-    "repayment": {
-      "title": "Record a payment",
-      "youPaid": "You paid <strong>{to}</strong>",
-      "paidYou": "<strong>{from}</strong> paid you",
-      "paid": "<strong>{from}</strong> paid <strong>{to}</strong>",
-      "submit": "Record a payment"
-    },
     "simpleSplit": {
       "label": "How was this expense split?",
       "youPaidEqually": "You paid, split equally.",
@@ -377,6 +370,19 @@
     "allSettled": "Everyone is settled up.",
     "youAreSettled": "You are all settled up.",
     "everyone": "Everyone’s balance"
+  },
+  "SettleUp": {
+    "title": "Record a payment",
+    "youPaid": "You paid <strong>{to}</strong>",
+    "paidYou": "<strong>{from}</strong> paid you",
+    "paid": "<strong>{from}</strong> paid <strong>{to}</strong>",
+    "amount": "Amount",
+    "submit": "Record a payment",
+    "saving": "Recording…",
+    "cancel": "Cancel",
+    "invalidAmount": "Enter an amount greater than zero.",
+    "error": "The payment could not be recorded. Please try again.",
+    "unknownParticipants": "This payment link is no longer valid."
   },
   "Stats": {
     "title": "Stats",

@@ -309,7 +309,7 @@ test('phrases debts from your side and settles up with one payment', async ({
   const row = page.getByTestId('reimbursement-row')
   await expect(row).toHaveText(/You owe Alice \$50\.00/)
   await row.getByRole('link', { name: 'Settle up' }).click()
-  await expect(page.getByTestId('repayment-summary')).toHaveText(
+  await expect(page.getByTestId('settle-up-summary')).toHaveText(
     'You paid Alice',
   )
   await page

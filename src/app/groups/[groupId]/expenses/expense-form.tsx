@@ -70,7 +70,7 @@ import { ChevronRight, Save } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { ReactNode, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { match } from 'ts-pattern'
 import { DeletePopup } from '../../../../components/delete-popup'
@@ -199,14 +199,13 @@ export function ExpenseForm({
 
   /** Whether the form was opened from a suggested reimbursement ("Mark as paid"). */
   const isRepayment = isCreate && !!searchParams.get('reimbursement')
-  // Simple mode replaces the payer and split fields with a single choice (or,
-  // for a repayment, with "Alice paid you"), so a form with a receipt to look
-  // at starts in Advanced.
+  // Simple mode replaces the payer and split fields with a single choice, so
+  // forms that arrive with those already filled in (a repayment opened by
+  // URL; "Settle up" has its own page) or with a receipt to look at start in
+  // Advanced.
   const [isAdvanced, setIsAdvanced] = useState(
-    !isCreate || !!searchParams.get('imageUrl'),
+    !isCreate || isRepayment || !!searchParams.get('imageUrl'),
   )
-  /** "Settle up": who paid whom and how much, nothing else. */
-  const isSimpleRepayment = isRepayment && !isAdvanced
 
   const getSelectedPayer = (field?: { value: string }) => {
     if (isCreate && typeof window !== 'undefined') {
@@ -403,32 +402,6 @@ export function ExpenseForm({
     }
     setIsAdvanced(false)
   }
-
-  // "Alice paid you", from the payer and recipient the form currently holds,
-  // so a change made in Advanced shows up here too.
-  const repaymentPayer = form.watch('paidBy')
-  const repaymentRecipient = form.watch('paidFor')?.[0]?.participant
-  const participantName = (id?: string) =>
-    group.participants.find((p) => p.id === id)?.name ?? ''
-  const strong = (chunks: ReactNode) => (
-    <strong className="font-semibold">{chunks}</strong>
-  )
-  const repaymentSentence =
-    repaymentPayer === activeUserId
-      ? t.rich('repayment.youPaid', {
-          to: participantName(repaymentRecipient),
-          strong,
-        })
-      : repaymentRecipient === activeUserId
-        ? t.rich('repayment.paidYou', {
-            from: participantName(repaymentPayer),
-            strong,
-          })
-        : t.rich('repayment.paid', {
-            from: participantName(repaymentPayer),
-            to: participantName(repaymentRecipient),
-            strong,
-          })
 
   const sendEvent = useAnalytics()
 
@@ -748,11 +721,9 @@ export function ExpenseForm({
         <Card>
           <CardHeader>
             <CardTitle>
-              {isRepayment
-                ? t('repayment.title')
-                : t(`${sExpense}.${isCreate ? 'create' : 'edit'}`)}
+              {t(`${sExpense}.${isCreate ? 'create' : 'edit'}`)}
             </CardTitle>
-            {isCreate && (
+            {isCreate && !isRepayment && (
               <div
                 role="group"
                 aria-label={t('mode.label')}
@@ -780,52 +751,43 @@ export function ExpenseForm({
             )}
           </CardHeader>
           <CardContent className="grid sm:grid-cols-2 gap-6">
-            {isSimpleRepayment && (
-              <p
-                className="sm:col-span-2 text-lg"
-                data-testid="repayment-summary"
-              >
-                {repaymentSentence}
-              </p>
-            )}
-            {!isSimpleRepayment && (
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem className="">
-                    <FormLabel>{t(`${sExpense}.TitleField.label`)}</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={t(`${sExpense}.TitleField.placeholder`)}
-                        className="text-base"
-                        {...field}
-                        onBlur={async () => {
-                          field.onBlur() // avoid skipping other blur event listeners since we overwrite `field`
-                          // Skip empty titles: tabbing through the field would
-                          // otherwise spend an API call to categorise "".
-                          if (
-                            isAdvanced &&
-                            runtimeFeatureFlags.enableCategoryExtract &&
-                            field.value.trim()
-                          ) {
-                            setCategoryLoading(true)
-                            const { categoryId } =
-                              await extractCategoryFromTitle(field.value)
-                            form.setValue('category', categoryId)
-                            setCategoryLoading(false)
-                          }
-                        }}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      {t(`${sExpense}.TitleField.description`)}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem className="">
+                  <FormLabel>{t(`${sExpense}.TitleField.label`)}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t(`${sExpense}.TitleField.placeholder`)}
+                      className="text-base"
+                      {...field}
+                      onBlur={async () => {
+                        field.onBlur() // avoid skipping other blur event listeners since we overwrite `field`
+                        // Skip empty titles: tabbing through the field would
+                        // otherwise spend an API call to categorise "".
+                        if (
+                          isAdvanced &&
+                          runtimeFeatureFlags.enableCategoryExtract &&
+                          field.value.trim()
+                        ) {
+                          setCategoryLoading(true)
+                          const { categoryId } = await extractCategoryFromTitle(
+                            field.value,
+                          )
+                          form.setValue('category', categoryId)
+                          setCategoryLoading(false)
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {t(`${sExpense}.TitleField.description`)}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {isAdvanced && (
               <FormField
@@ -1716,9 +1678,7 @@ export function ExpenseForm({
             loadingContent={t(isCreate ? 'creating' : 'saving')}
           >
             <Save className="w-4 h-4 mr-2" />
-            {isRepayment
-              ? t('repayment.submit')
-              : t(isCreate ? 'create' : 'save')}
+            {t(isCreate ? 'create' : 'save')}
           </SubmitButton>
           {!isCreate && onDelete && (
             <DeletePopup

@@ -18,7 +18,11 @@ test.use({ exchangeRate: 1.25 })
 
 const PARTICIPANTS = ['Alice', 'Bob']
 
-/** Creates a group where Bob owes Alice 50, and opens "Settle up". */
+/**
+ * Creates a group where Bob owes Alice 50, and opens the full repayment form
+ * for it. "Settle up" itself only records an amount in the group currency, so
+ * the transfer-currency form is reached by URL with the same parameters.
+ */
 async function openRepaymentForm(page: Page, name: string): Promise<string> {
   const groupId = await createGroup(page, {
     name: `${name} ${uniqueSuffix()}`,
@@ -31,13 +35,16 @@ async function openRepaymentForm(page: Page, name: string): Promise<string> {
   })
 
   await openTab(page, 'Expenses')
-  await reimbursementRow(page, 'Bob', 'Alice')
+  const href = await reimbursementRow(page, 'Bob', 'Alice')
     .getByRole('link', { name: 'Settle up' })
-    .click()
-  await page.waitForURL(/\/expenses\/create\?.*reimbursement=yes/, {
-    timeout: 30_000,
-  })
-  await page.getByRole('button', { name: 'Advanced', exact: true }).click()
+    .getAttribute('href')
+  const query = href!.split('?')[1]
+  await page.goto(
+    `/groups/${groupId}/expenses/create?reimbursement=yes&${query}`,
+  )
+  await expect(
+    page.getByRole('button', { name: 'Create', exact: true }),
+  ).toBeVisible({ timeout: 30_000 })
   return groupId
 }
 
@@ -81,9 +88,7 @@ test('settles the balance exactly and keeps the transferred amount', async ({
   )
   await expect(originalAmount(page)).toHaveValue('40.00')
 
-  await page
-    .getByRole('button', { name: 'Record a payment', exact: true })
-    .click()
+  await page.getByRole('button', { name: 'Create', exact: true }).click()
   await page.waitForURL(EXPENSES_URL, { timeout: 30_000 })
 
   // The card carries both figures: what settles the balance and what moved.

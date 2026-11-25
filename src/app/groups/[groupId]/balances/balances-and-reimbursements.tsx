@@ -164,7 +164,7 @@ function Debts({
               className="flex-shrink-0"
             >
               <Link
-                href={`/groups/${groupId}/expenses/create?reimbursement=yes&from=${from}&to=${to}&amount=${amount}`}
+                href={`/groups/${groupId}/settle-up?from=${from}&to=${to}&amount=${amount}`}
               >
                 {t('settleUp')}
               </Link>

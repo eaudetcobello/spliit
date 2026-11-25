@@ -16,8 +16,10 @@ type Section = {
 function useSections(groupId: string) {
   const t = useTranslations()
   const pathname = usePathname()
-  const current =
+  const segment =
     pathname.replace(/\/groups\/[^\/]+\/([^/]+).*/, '$1') || 'expenses'
+  // Settling up is part of the Expenses section.
+  const current = segment === 'settle-up' ? 'expenses' : segment
 
   const sections: Section[] = [
     { value: 'expenses', label: t('Expenses.title'), Icon: Receipt },
