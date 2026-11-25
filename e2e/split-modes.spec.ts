@@ -7,8 +7,8 @@ import {
   openExpense,
   openTab,
   paidForRow,
+  switchToAdvancedMode,
   uniqueSuffix,
-  useAdvancedMode,
 } from './app'
 import { expect, test } from './fixtures'
 import { fillStable, money, normalizeMoney, selectRadixOption } from './ui'
@@ -124,7 +124,7 @@ test('rejects percentages that do not add up to 100', async ({ page }) => {
   await page.goto(`/groups/${groupId}/expenses/create`)
   const submit = page.getByRole('button', { name: 'Create', exact: true })
   await expect(submit).toBeVisible({ timeout: 30_000 })
-  await useAdvancedMode(page)
+  await switchToAdvancedMode(page)
 
   await fillStable(page.locator('input[name="title"]'), 'Invalid')
   await fillStable(page.locator('input[name="amount"]'), '100')
@@ -154,7 +154,7 @@ test('names the difference when amounts do not add up', async ({ page }) => {
   await page.goto(`/groups/${groupId}/expenses/create`)
   const submit = page.getByRole('button', { name: 'Create', exact: true })
   await expect(submit).toBeVisible({ timeout: 30_000 })
-  await useAdvancedMode(page)
+  await switchToAdvancedMode(page)
 
   await fillStable(page.locator('input[name="title"]'), 'Off by a cent')
   await fillStable(page.locator('input[name="amount"]'), '100')
@@ -197,7 +197,7 @@ test('offers the remainder again when an amount is cleared', async ({
   await page.goto(`/groups/${groupId}/expenses/create`)
   const submit = page.getByRole('button', { name: 'Create', exact: true })
   await expect(submit).toBeVisible({ timeout: 30_000 })
-  await useAdvancedMode(page)
+  await switchToAdvancedMode(page)
 
   await fillStable(page.locator('input[name="title"]'), 'Cleared')
   await fillStable(page.locator('input[name="amount"]'), '100')
@@ -253,7 +253,7 @@ test('saves an even split with the leftover cent where it was previewed', async 
     await page.goto(`/groups/${groupId}/expenses/create`)
     const submit = page.getByRole('button', { name: 'Create', exact: true })
     await expect(submit).toBeVisible({ timeout: 30_000 })
-    await useAdvancedMode(page)
+    await switchToAdvancedMode(page)
 
     await fillStable(page.locator('input[name="title"]'), title)
     await fillStable(page.locator('input[name="amount"]'), amount)
@@ -299,7 +299,7 @@ test('can retry a create whose response was lost', async ({ page }) => {
   await page.goto(`/groups/${groupId}/expenses/create`)
   const submit = page.getByRole('button', { name: 'Create', exact: true })
   await expect(submit).toBeVisible({ timeout: 30_000 })
-  await useAdvancedMode(page)
+  await switchToAdvancedMode(page)
 
   await fillStable(page.locator('input[name="title"]'), 'Lost')
   await fillStable(page.locator('input[name="amount"]'), '16.57')

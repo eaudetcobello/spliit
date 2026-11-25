@@ -4,8 +4,8 @@ import {
   expectBalance,
   openTab,
   paidForRow,
+  switchToAdvancedMode,
   uniqueSuffix,
-  useAdvancedMode,
 } from './app'
 import { expect, test } from './fixtures'
 import { fillStable } from './ui'
@@ -50,7 +50,7 @@ test('renames a group and adds a participant afterwards', async ({ page }) => {
     paidBy: 'Dave',
   })
   await page.goto(`/groups/${groupId}/expenses/create`)
-  await useAdvancedMode(page)
+  await switchToAdvancedMode(page)
   await expect(paidForRow(page, 'Dave')).toBeVisible()
 
   await page.goto(`/groups/${groupId}/balances`)

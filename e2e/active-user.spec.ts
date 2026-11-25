@@ -2,8 +2,8 @@ import {
   addExpense,
   createGroup,
   expenseCard,
+  switchToAdvancedMode,
   uniqueSuffix,
-  useAdvancedMode,
 } from './app'
 import { expect, test } from './fixtures'
 import { money } from './ui'
@@ -80,7 +80,7 @@ test('pre-fills "Paid by" with the active user', async ({ page }) => {
   await expect(
     page.getByRole('radio', { name: 'You paid, split equally.' }),
   ).toBeChecked()
-  await useAdvancedMode(page)
+  await switchToAdvancedMode(page)
   await expect(page.getByTestId('paid-by')).toContainText('Carol')
 })
 

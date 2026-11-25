@@ -122,7 +122,7 @@ export async function addExpense(
 
   // Payer, date and the split live in Advanced; Simple mode reduces them to a
   // single "How was this expense split?" choice.
-  await useAdvancedMode(page)
+  await switchToAdvancedMode(page)
 
   await fillStable(page.locator('input[name="title"]'), expense.title)
   // Amount before split mode: BY_AMOUNT re-distributes shares whenever the
@@ -305,7 +305,7 @@ export function reimbursementRow(
 }
 
 /** Switches the create-expense form to Advanced mode. */
-export async function useAdvancedMode(page: Page) {
+export async function switchToAdvancedMode(page: Page) {
   const advanced = page.getByRole('button', { name: 'Advanced', exact: true })
   await advanced.click()
   await expect(advanced).toHaveAttribute('aria-pressed', 'true')

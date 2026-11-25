@@ -4,8 +4,8 @@ import {
   expectBalance,
   openExpense,
   paidForRow,
+  switchToAdvancedMode,
   uniqueSuffix,
-  useAdvancedMode,
 } from './app'
 import { expect, test } from './fixtures'
 import { fieldByLabel, fillStable, selectRadixOption, setChecked } from './ui'
@@ -148,7 +148,7 @@ test('maps the Simple split choices onto payer and split', async ({ page }) => {
     .click()
 
   // Advanced shows the same split, and switching back keeps the choice.
-  await useAdvancedMode(page)
+  await switchToAdvancedMode(page)
   await expect(page.getByTestId('paid-by')).toContainText('Alice')
   await expect(paidForRow(page, 'Alice').getByRole('checkbox')).toHaveAttribute(
     'aria-checked',
@@ -182,7 +182,7 @@ test('keeps a custom Advanced split in Simple mode until a choice is made', asyn
   await page.goto(`/groups/${groupId}/expenses/create`)
   await fillStable(page.locator('input[name="title"]'), 'Taxi')
   await fillStable(page.locator('input[name="amount"]'), '40')
-  await useAdvancedMode(page)
+  await switchToAdvancedMode(page)
   await selectRadixOption(page, page.getByTestId('paid-by'), 'Bob')
   await setChecked(paidForRow(page, 'Carol').getByRole('checkbox'), false)
   await page.getByRole('button', { name: 'Simple', exact: true }).click()
