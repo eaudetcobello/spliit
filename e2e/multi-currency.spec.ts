@@ -24,6 +24,7 @@ async function openExpenseForm(page: Page, id: string) {
   await expect(
     page.getByRole('button', { name: 'Create', exact: true }),
   ).toBeVisible({ timeout: 30_000 })
+  await page.getByRole('button', { name: 'Advanced', exact: true }).click()
 }
 
 /**
@@ -75,7 +76,7 @@ test('converts a foreign-currency expense into the group currency', async ({
 
   // The list and the balances are all in the group currency.
   await expect(expenseCard(page, 'Paris hotel')).toContainText(money(100))
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 50)
   await expectBalance(page, 'Bob', -50)
 
@@ -116,7 +117,7 @@ test('lets a custom rate override the fetched one', async ({ page }) => {
   await page.waitForURL(EXPENSES_URL, { timeout: 30_000 })
 
   await expect(expenseCard(page, 'Berlin train')).toContainText(money(160))
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 80)
   await expectBalance(page, 'Bob', -80)
 })

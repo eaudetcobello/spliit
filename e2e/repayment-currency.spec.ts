@@ -30,13 +30,14 @@ async function openRepaymentForm(page: Page, name: string): Promise<string> {
     paidBy: 'Alice',
   })
 
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await reimbursementRow(page, 'Bob', 'Alice')
     .getByRole('link', { name: 'Mark as paid' })
     .click()
   await page.waitForURL(/\/expenses\/create\?.*reimbursement=yes/, {
     timeout: 30_000,
   })
+  await page.getByRole('button', { name: 'Advanced', exact: true }).click()
   return groupId
 }
 
@@ -90,7 +91,7 @@ test('settles the balance exactly and keeps the transferred amount', async ({
 
   // The point of keeping the group amount authoritative: the balance is zero,
   // not "zero apart from a rounding remainder".
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 0)
   await expectBalance(page, 'Bob', 0)
 

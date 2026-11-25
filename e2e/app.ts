@@ -14,11 +14,10 @@ export type SplitMode = 'EVENLY' | 'BY_SHARES' | 'BY_PERCENTAGE' | 'BY_AMOUNT'
 export type Recurrence = 'None' | 'Daily' | 'Weekly' | 'Monthly'
 
 export type GroupTab =
-  'Expenses' | 'Balances' | 'Information' | 'Stats' | 'Activity' | 'Settings'
+  'Expenses' | 'Information' | 'Stats' | 'Activity' | 'Settings'
 
 const TAB_PATHS: Record<GroupTab, string> = {
   Expenses: 'expenses',
-  Balances: 'balances',
   Information: 'information',
   Stats: 'stats',
   Activity: 'activity',
@@ -132,6 +131,10 @@ export async function addExpense(
   if (expense.date) {
     // The date input spreads no RHF field, so it has no name attribute.
     await fillStable(page.locator('input[type="date"]'), expense.date)
+  }
+
+  if (expense.category || expense.recurrence || expense.notes) {
+    await page.getByRole('button', { name: 'Advanced', exact: true }).click()
   }
 
   if (expense.category) {

@@ -1,5 +1,4 @@
 import { ApplePwaSplash } from '@/app/apple-pwa-splash'
-import { LocaleSwitcher } from '@/components/locale-switcher'
 import { ProgressBar } from '@/components/progress-bar'
 import { ServiceWorkerRegistration } from '@/components/service-worker-registration'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -12,44 +11,39 @@ import { effectiveBaseUrl } from '@/lib/env'
 import { TRPCProvider } from '@/trpc/client'
 import type { Metadata, Viewport } from 'next'
 import { NextIntlClientProvider, useTranslations } from 'next-intl'
-import { getLocale, getMessages, getTranslations } from 'next-intl/server'
+import { getLocale, getMessages } from 'next-intl/server'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import './globals.css'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('Homepage')
   return {
     metadataBase: new URL(effectiveBaseUrl),
     title: {
-      default: t('metaTitle'),
-      template: '%s · Spliit',
+      default: 'Expenses',
+      template: '%s · Expenses',
     },
     description:
-      'Spliit is a minimalist web application to share expenses with friends and family. No ads, no account, no problem.',
+      'Split expenses, track balances, and settle up with your groups.',
     openGraph: {
-      title: t('metaTitle'),
+      title: 'Expenses',
       description:
-        'Spliit is a minimalist web application to share expenses with friends and family. No ads, no account, no problem.',
-      images: `/banner.png`,
+        'Split expenses, track balances, and settle up with your groups.',
       type: 'website',
       url: '/',
     },
     twitter: {
-      card: 'summary_large_image',
-      creator: '@scastiel',
-      site: '@scastiel',
-      images: `/banner.png`,
-      title: t('metaTitle'),
+      card: 'summary',
+      title: 'Expenses',
       description:
-        'Spliit is a minimalist web application to share expenses with friends and family. No ads, no account, no problem.',
+        'Split expenses, track balances, and settle up with your groups.',
     },
     appleWebApp: {
       capable: true,
-      title: 'Spliit',
+      title: 'Expenses',
     },
-    applicationName: 'Spliit',
+    applicationName: 'Expenses',
     icons: [
       {
         url: '/android-chrome-192x192.png',
@@ -77,16 +71,15 @@ function Content({ children }: { children: React.ReactNode }) {
         <Link
           className="flex items-center gap-2 hover:scale-105 transition-transform"
           href="/"
+          aria-label={t('Header.groups')}
         >
-          <h1>
-            <Image
-              src="/logo-with-text.png"
-              className="m-1 h-auto w-auto"
-              width={(35 * 522) / 180}
-              height={35}
-              alt="Spliit"
-            />
-          </h1>
+          <Image
+            src="/logo/192x192.png"
+            className="m-1 h-[35px] w-[35px]"
+            width={35}
+            height={35}
+            alt=""
+          />
         </Link>
         <div role="navigation" aria-label="Menu" className="flex">
           <ul className="flex items-center text-sm">
@@ -101,9 +94,6 @@ function Content({ children }: { children: React.ReactNode }) {
               </Button>
             </li>
             <li>
-              <LocaleSwitcher />
-            </li>
-            <li>
               <ThemeToggle />
             </li>
           </ul>
@@ -112,42 +102,6 @@ function Content({ children }: { children: React.ReactNode }) {
 
       <div className="pt-16 flex-1 flex flex-col">{children}</div>
 
-      <footer className="sm:p-8 md:p-16 sm:mt-16 sm:text-sm md:text-base md:mt-32 bg-slate-50 dark:bg-card border-t p-6 mt-8 flex flex-col sm:flex-row sm:justify-between gap-4 text-xs [&_a]:underline">
-        <div className="flex flex-col space-y-2">
-          <div className="sm:text-lg font-semibold text-base flex space-x-2 items-center">
-            <Link className="flex items-center gap-2" href="/">
-              <Image
-                src="/logo-with-text.png"
-                className="m-1 h-auto w-auto"
-                width={(35 * 522) / 180}
-                height={35}
-                alt="Spliit"
-              />
-            </Link>
-          </div>
-          <div className="flex flex-col space-y a--no-underline-text-white">
-            <span>{t('Footer.madeIn')}</span>
-            <span>
-              {t.rich('Footer.builtBy', {
-                author: (txt) => (
-                  <a href="https://scastiel.dev" target="_blank" rel="noopener">
-                    {txt}
-                  </a>
-                ),
-                source: (txt) => (
-                  <a
-                    href="https://github.com/spliit-app/spliit/graphs/contributors"
-                    target="_blank"
-                    rel="noopener"
-                  >
-                    {txt}
-                  </a>
-                ),
-              })}
-            </span>
-          </div>
-        </div>
-      </footer>
       <Toaster />
     </TRPCProvider>
   )
@@ -167,7 +121,7 @@ export default async function RootLayout({
       dir={['ar', 'he'].includes(locale) ? 'rtl' : 'ltr'}
       suppressHydrationWarning
     >
-      <ApplePwaSplash icon="/logo-with-text.png" color="#047857" />
+      <ApplePwaSplash icon="/logo/192x192.png" color="#047857" />
       <body className="min-h-[100dvh] flex flex-col items-stretch bg-slate-50 bg-opacity-30 dark:bg-background">
         <NextIntlClientProvider messages={messages}>
           {/* Rendered inside the provider because it reads translations via

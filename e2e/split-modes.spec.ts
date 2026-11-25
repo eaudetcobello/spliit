@@ -29,7 +29,7 @@ test('splits an expense by shares', async ({ page }) => {
     shares: { Alice: '2', Bob: '1', Carol: '1' },
   })
 
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 50)
   await expectBalance(page, 'Bob', -25)
   await expectBalance(page, 'Carol', -25)
@@ -49,7 +49,7 @@ test('splits an expense by percentage', async ({ page }) => {
     shares: { Alice: '50', Bob: '30', Carol: '20' },
   })
 
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 50)
   await expectBalance(page, 'Bob', -30)
   await expectBalance(page, 'Carol', -20)
@@ -69,7 +69,7 @@ test('splits an expense by amount', async ({ page }) => {
     shares: { Alice: '50', Bob: '30', Carol: '20' },
   })
 
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 50)
   await expectBalance(page, 'Bob', -30)
   await expectBalance(page, 'Carol', -20)
@@ -106,7 +106,7 @@ test('keeps a by-amount split that skips a participant when reopened', async ({
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await page.waitForURL(EXPENSES_URL, { timeout: 30_000 })
 
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 40)
   await expectBalance(page, 'Bob', -40)
   await expectBalance(page, 'Carol', 0)
@@ -213,7 +213,7 @@ test('offers the remainder again when an amount is cleared', async ({
   // The suggestion is what gets saved when the input is left empty.
   await submit.click()
   await page.waitForURL(/\/groups\/[^/]+\/expenses(\?|$)/, { timeout: 30_000 })
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 50)
   await expectBalance(page, 'Bob', -30)
   await expectBalance(page, 'Carol', -20)
@@ -280,7 +280,7 @@ test('saves an even split with the leftover cent where it was previewed', async 
     bobOwes += previewed.Bob === money(high) ? high : low
   }
 
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', bobOwes)
   await expectBalance(page, 'Bob', -bobOwes)
 })

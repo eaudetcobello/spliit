@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import useSWR, { Fetcher } from 'swr'
+import { ACTIVE_USER_CHANGED, readActiveUser } from './active-user'
 
 export function useMediaQuery(query: string): boolean {
   const getMatches = (query: string): boolean => {
@@ -57,9 +58,13 @@ export function useActiveUser(groupId?: string) {
   const [activeUser, setActiveUser] = useState<string | null>(null)
 
   useEffect(() => {
-    if (groupId) {
-      const activeUser = localStorage.getItem(`${groupId}-activeUser`)
-      if (activeUser) setActiveUser(activeUser)
+    const update = () => setActiveUser(groupId ? readActiveUser(groupId) : null)
+    update()
+    window.addEventListener('storage', update)
+    window.addEventListener(ACTIVE_USER_CHANGED, update)
+    return () => {
+      window.removeEventListener('storage', update)
+      window.removeEventListener(ACTIVE_USER_CHANGED, update)
     }
   }, [groupId])
 

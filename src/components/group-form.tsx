@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Locale } from '@/i18n/request'
+import { saveActiveUser } from '@/lib/active-user'
 import { useAnalytics } from '@/lib/analytics/context'
 import { getGroup } from '@/lib/api'
 import { defaultCurrencyList, getCurrency } from '@/lib/currency'
@@ -116,9 +117,9 @@ export function GroupForm({
     if (group?.id) {
       const participant = group.participants.find((p) => p.name === activeUser)
       if (participant?.id) {
-        localStorage.setItem(`${group.id}-activeUser`, participant.id)
+        saveActiveUser(group.id, participant.id)
       } else {
-        localStorage.setItem(`${group.id}-activeUser`, activeUser)
+        saveActiveUser(group.id, activeUser)
       }
     } else {
       localStorage.setItem('newGroup-activeUser', activeUser)

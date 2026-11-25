@@ -4,6 +4,7 @@ import { ExpenseCard } from '@/app/groups/[groupId]/expenses/expense-card'
 import { Button } from '@/components/ui/button'
 import { SearchBar } from '@/components/ui/search-bar'
 import { Skeleton } from '@/components/ui/skeleton'
+import { saveActiveUser } from '@/lib/active-user'
 import {
   EXPENSE_GROUPS,
   getGroupedExpensesByDate,
@@ -37,13 +38,13 @@ export function ExpenseList() {
       localStorage.removeItem('newGroup-activeUser')
       localStorage.removeItem(`${groupId}-newUser`)
       if (activeUser === 'None') {
-        localStorage.setItem(`${groupId}-activeUser`, 'None')
+        saveActiveUser(groupId, 'None')
       } else {
         const userId = participants.find(
           (p) => p.name === (activeUser || newUser),
         )?.id
         if (userId) {
-          localStorage.setItem(`${groupId}-activeUser`, userId)
+          saveActiveUser(groupId, userId)
         }
       }
     }

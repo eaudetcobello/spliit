@@ -1,14 +1,10 @@
-import BalancesAndReimbursements from '@/app/groups/[groupId]/balances/balances-and-reimbursements'
-import { getTranslations } from 'next-intl/server'
+import { redirect } from 'next/navigation'
 
-export async function generateMetadata() {
-  const t = await getTranslations('Balances')
-
-  return {
-    title: t('title'),
-  }
-}
-
-export default async function GroupPage() {
-  return <BalancesAndReimbursements />
+export default async function BalancesPage({
+  params,
+}: {
+  params: Promise<{ groupId: string }>
+}) {
+  const { groupId } = await params
+  redirect(`/groups/${groupId}/expenses`)
 }

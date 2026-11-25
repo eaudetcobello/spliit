@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { TrackPage } from '@/lib/analytics/track-page'
 import { getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import { useTranslations } from 'next-intl'
@@ -36,46 +35,46 @@ export default function BalancesAndReimbursements() {
   const isLoading = balancesAreLoading || !balancesData || !group
 
   return (
-    <>
-      <TrackPage path={`/groups/${groupId}/balances`} />
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>{t('title')}</CardTitle>
-          <CardDescription>{t('description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <BalancesLoading participantCount={group?.participants.length} />
-          ) : (
-            <BalancesList
-              balances={balancesData.balances}
-              participants={group?.participants}
-              currency={getCurrencyFromGroup(group)}
-            />
-          )}
-        </CardContent>
-      </Card>
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>{t('Reimbursements.title')}</CardTitle>
-          <CardDescription>{t('Reimbursements.description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <ReimbursementsLoading
-              participantCount={group?.participants.length}
-            />
-          ) : (
-            <ReimbursementList
-              reimbursements={balancesData.reimbursements}
-              participants={group?.participants}
-              currency={getCurrencyFromGroup(group)}
-              groupId={groupId}
-            />
-          )}
-        </CardContent>
-      </Card>
-    </>
+    <Card
+      className="mb-4 rounded-none -mx-4 border-x-0 sm:border-x sm:rounded-lg sm:mx-0"
+      data-testid="balances-card"
+    >
+      <CardHeader>
+        <CardTitle>{t('title')}</CardTitle>
+        <CardDescription>{t('description')}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <BalancesLoading participantCount={group?.participants.length} />
+        ) : (
+          <BalancesList
+            balances={balancesData.balances}
+            participants={group?.participants}
+            currency={getCurrencyFromGroup(group)}
+          />
+        )}
+      </CardContent>
+      <CardHeader className="border-t mx-6 px-0 pt-6">
+        <h3 className="font-semibold leading-none tracking-tight">
+          {t('Reimbursements.title')}
+        </h3>
+        <CardDescription>{t('Reimbursements.description')}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <ReimbursementsLoading
+            participantCount={group?.participants.length}
+          />
+        ) : (
+          <ReimbursementList
+            reimbursements={balancesData.reimbursements}
+            participants={group?.participants}
+            currency={getCurrencyFromGroup(group)}
+            groupId={groupId}
+          />
+        )}
+      </CardContent>
+    </Card>
   )
 }
 

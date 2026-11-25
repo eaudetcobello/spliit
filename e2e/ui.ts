@@ -85,9 +85,8 @@ export async function setChecked(
 }
 
 /**
- * The <Card> whose CardTitle (an h3) is `title`. Balances and Suggested
- * reimbursements are two structurally identical, unlabelled cards, so
- * assertions have to be scoped to one of them.
+ * The <Card> containing the heading `title`. Balances and suggested
+ * reimbursements now share a card.
  */
 export function cardByTitle(page: Page, title: string): Locator {
   return page

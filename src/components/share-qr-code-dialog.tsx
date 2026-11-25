@@ -12,7 +12,7 @@ import {
 import { QrCode } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { QRCodeSVG } from 'qrcode.react'
-import { useEffect, useId, useState } from 'react'
+import { useId } from 'react'
 
 interface Props {
   url: string
@@ -22,25 +22,6 @@ interface Props {
 export function ShareQrCodeDialog({ url, groupName }: Props) {
   const t = useTranslations('Share')
   const qrCodeId = useId()
-  const [logoDataUrl, setLogoDataUrl] = useState<string>('')
-
-  useEffect(() => {
-    // Load the Spliit logo and convert it to a data URL
-    const loadLogo = async () => {
-      try {
-        const response = await fetch('/logo/192x192.png')
-        const blob = await response.blob()
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          setLogoDataUrl(reader.result as string)
-        }
-        reader.readAsDataURL(blob)
-      } catch (error) {
-        console.error('Failed to load logo:', error)
-      }
-    }
-    loadLogo()
-  }, [])
 
   const handleDownload = () => {
     const svg = document.getElementById(qrCodeId)
@@ -96,18 +77,6 @@ export function ShareQrCodeDialog({ url, groupName }: Props) {
               bgColor="#ffffff"
               fgColor="#000000"
               title={t('qrCode.title')}
-              imageSettings={
-                logoDataUrl
-                  ? {
-                      src: logoDataUrl,
-                      x: undefined,
-                      y: undefined,
-                      height: 48,
-                      width: 48,
-                      excavate: true,
-                    }
-                  : undefined
-              }
             />
           </div>
           <Button onClick={handleDownload} className="w-full">

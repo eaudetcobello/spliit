@@ -43,15 +43,16 @@ test('asks who you are and personalises the expense list', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Save changes' }).click()
   await expect(dialog).toBeHidden()
 
-  // The reload is required, not incidental: useActiveUser (src/lib/hooks.ts)
-  // reads localStorage once in a useEffect keyed on groupId, so it is not
-  // reactive and already-mounted cards keep the previous value until they
-  // remount. Asserting before a reload would be asserting a bug fix nobody
-  // has made.
+  await expect(page.getByRole('button', { name: 'I am Bob' })).toBeVisible()
+  await expect(expenseCard(page, 'Dinner')).toContainText('Your balance:')
+  await expect(expenseCard(page, 'Dinner')).toContainText(money(-30))
+
+  // The selection survives a refresh as well as updating mounted views.
   await page.reload()
 
   // The dialog does not come back...
   await expect(page.getByRole('dialog')).toBeHidden()
+  await expect(page.getByRole('button', { name: 'I am Bob' })).toBeVisible()
   // ...and Bob now sees his own third of Alice's 90 on the card.
   await expect(expenseCard(page, 'Dinner')).toContainText('Your balance:')
   await expect(expenseCard(page, 'Dinner')).toContainText(money(-30))

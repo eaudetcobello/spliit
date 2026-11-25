@@ -44,7 +44,7 @@ test('records a negative amount as an income', async ({ page }) => {
   )
 
   // Income inverts the balances: Alice took the money in, so she owes it.
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', -60)
   await expectBalance(page, 'Bob', 30)
   await expectBalance(page, 'Carol', 30)

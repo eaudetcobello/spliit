@@ -24,7 +24,7 @@ test('settles a debt through "Mark as paid"', async ({ page }) => {
     paidBy: 'Alice',
   })
 
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 50)
   await expectBalance(page, 'Bob', -50)
 
@@ -57,7 +57,7 @@ test('settles a debt through "Mark as paid"', async ({ page }) => {
     page.getByTestId('expense-card').filter({ hasText: 'Reimbursement' }),
   ).toBeVisible()
 
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 0)
   await expectBalance(page, 'Bob', 0)
   await expect(page.getByText(/doesn.t need any reimbursement/)).toBeVisible()

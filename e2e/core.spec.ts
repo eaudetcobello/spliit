@@ -43,7 +43,7 @@ test('creates a group, records expenses and computes balances', async ({
   await expect(taxi).toContainText(money(30))
   await expect(taxi).toContainText('Paid by Bob')
 
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
 
   // Alice 90 - 40, Bob 30 - 40, Carol 0 - 40. Sums to zero.
   await expectBalance(page, 'Alice', 50)

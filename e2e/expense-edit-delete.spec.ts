@@ -50,7 +50,7 @@ test('edits an expense and recomputes balances', async ({ page }) => {
   await expect(card).toContainText('Paid by Alice for Alice, Bob')
 
   // 90 split between Alice and Bob only.
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 45)
   await expectBalance(page, 'Bob', -45)
   await expectBalance(page, 'Carol', 0)
@@ -68,7 +68,7 @@ test('deletes an expense and clears the balances', async ({ page }) => {
     paidBy: 'Alice',
   })
 
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 40)
 
   await openTab(page, 'Expenses')
@@ -83,7 +83,7 @@ test('deletes an expense and clears the balances', async ({ page }) => {
   await expect(page.getByTestId('expense-card')).toHaveCount(0)
   await expect(page.getByText(/doesn.t contain any expense yet/)).toBeVisible()
 
-  await openTab(page, 'Balances')
+  await openTab(page, 'Expenses')
   await expectBalance(page, 'Alice', 0)
   await expectBalance(page, 'Bob', 0)
   await expectBalance(page, 'Carol', 0)
