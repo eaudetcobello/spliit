@@ -1,6 +1,6 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791693648476,
-  "repoUrl": "https://github.com/spliit-app/spliit",
+  "lastUpdate": 1795577957779,
+  "repoUrl": "https://github.com/eaudetcobello/spliit",
   "entries": {
     "Spliit performance (deterministic)": [
       {
@@ -483,6 +483,90 @@ window.BENCHMARK_DATA = {
           {
             "name": "view-group:search queries",
             "value": 2,
+            "unit": "queries"
+          },
+          {
+            "name": "view-group:balances bytes",
+            "value": 2370,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-group:balances queries",
+            "value": 2,
+            "unit": "queries"
+          },
+          {
+            "name": "view-expense:edit-form bytes",
+            "value": 5657,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-expense:edit-form queries",
+            "value": 3,
+            "unit": "queries"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155978570+eaudetcobello@users.noreply.github.com",
+            "name": "eaudetcobello",
+            "username": "eaudetcobello"
+          },
+          "committer": {
+            "email": "155978570+eaudetcobello@users.noreply.github.com",
+            "name": "eaudetcobello",
+            "username": "eaudetcobello"
+          },
+          "distinct": true,
+          "id": "a4c069b5166da2675280816ba958b9ce5d98b53f",
+          "message": "Add the one-off Postgres-to-SQLite import script\n\nImports psql json_agg exports of each table into a freshly migrated\nSQLite database, converting values by column type, and checks foreign\nkeys and row counts.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-24T22:33:06-05:00",
+          "tree_id": "fea3ac465f21a852687f5772c58ba754388240a0",
+          "url": "https://github.com/eaudetcobello/spliit/commit/a4c069b5166da2675280816ba958b9ce5d98b53f"
+        },
+        "date": 1795577957150,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "list-groups:home bytes",
+            "value": 7064,
+            "unit": "bytes"
+          },
+          {
+            "name": "list-groups:home queries",
+            "value": 61,
+            "unit": "queries"
+          },
+          {
+            "name": "view-group:first-page bytes",
+            "value": 25258,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-group:first-page queries",
+            "value": 3,
+            "unit": "queries"
+          },
+          {
+            "name": "view-group:deep-page bytes",
+            "value": 24564,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-group:deep-page queries",
+            "value": 2,
+            "unit": "queries"
+          },
+          {
+            "name": "view-group:search bytes",
+            "value": 23714,
+            "unit": "bytes"
+          },
+          {
+            "name": "view-group:search queries",
+            "value": 3,
             "unit": "queries"
           },
           {
