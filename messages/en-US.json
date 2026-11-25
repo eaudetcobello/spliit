@@ -26,6 +26,7 @@
     "title": "Expenses",
     "description": "Here are the expenses that you created for your group.",
     "create": "Create expense",
+    "add": "Add expense",
     "createFirst": "Create the first one",
     "noExpenses": "Your group doesn’t contain any expense yet.",
     "export": "Export",

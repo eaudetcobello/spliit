@@ -58,6 +58,16 @@ test('shows balances and reimbursements in one card before expenses', async ({
   await expect(page).toHaveURL(new RegExp(`/groups/${groupId}/expenses$`))
 })
 
+test('adds expenses from the floating button', async ({ page }) => {
+  const groupId = await createGroup(page, {
+    name: `E2E Fab ${uniqueSuffix()}`,
+    participants: ['Alice', 'Bob'],
+  })
+  await expect(page.getByTitle('Create expense')).toHaveCount(0)
+  await page.getByRole('link', { name: 'Add expense' }).click()
+  await page.waitForURL(new RegExp(`/groups/${groupId}/expenses/create$`))
+})
+
 test('has no Information section', async ({ page }) => {
   const groupId = await createGroup(page, {
     name: `E2E No Info ${uniqueSuffix()}`,

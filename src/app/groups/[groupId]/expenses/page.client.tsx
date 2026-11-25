@@ -39,14 +39,6 @@ export default function GroupExpensesPageClient({
           <CardHeader className="p-4 sm:p-6 flex flex-row space-y-0 gap-2">
             <ExportButton groupId={groupId} />
             {enableReceiptExtract && <CreateFromReceiptButton />}
-            <Button asChild size="icon">
-              <Link
-                href={`/groups/${groupId}/expenses/create`}
-                title={t('create')}
-              >
-                <Plus className="w-4 h-4" />
-              </Link>
-            </Button>
           </CardHeader>
         </div>
 
@@ -54,6 +46,19 @@ export default function GroupExpensesPageClient({
           <ExpenseList />
         </CardContent>
       </Card>
+
+      {/* Keeps the last expenses clear of the floating button. */}
+      <div aria-hidden className="h-16" />
+      <Button
+        asChild
+        size="lg"
+        className="fixed z-40 right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:right-8 md:bottom-8 h-14 rounded-full px-6 gap-2 shadow-lg text-base"
+      >
+        <Link href={`/groups/${groupId}/expenses/create`}>
+          <Plus className="w-5 h-5" />
+          {t('add')}
+        </Link>
+      </Button>
     </>
   )
 }
